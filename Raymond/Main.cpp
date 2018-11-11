@@ -1,9 +1,13 @@
 #include <iostream>
 #include "SDL.h"
 #include "glm.hpp"
+#include "Source/Color.h"
+#include "Source/Camera.h"
+#include "Source/Sphere.h"
 
 using namespace std;
 using namespace glm;
+using namespace Raymond;
 
 void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 {
@@ -39,6 +43,8 @@ void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 	}
 }
 
+int kWidth = 640;
+int kHeight = 480;
 
 int main(int argc, char* args[])
 {
@@ -48,7 +54,9 @@ int main(int argc, char* args[])
 		return 1;
 	}
 
-	SDL_Window* win = SDL_CreateWindow("Hello World!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
+	SDL_Window* win = SDL_CreateWindow("Hello World!", 100, 100,
+		kWidth, kHeight, SDL_WINDOW_SHOWN);
+
 	if (win == nullptr)
 	{
 		std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -62,11 +70,20 @@ int main(int argc, char* args[])
 	// The image we will load and show on the screen
 	SDL_Surface* helloWorld = nullptr;
 
-	vec3 origin(0.0f, 0.0f, 0.0f);
-	vec3 lower_left_corner(-2.0f, -1.0f, -1.0f);
-	vec3 horizontal(4.0f, 0.0f, 0.0f);
-	vec3 vertical(0.0f, 2.0f, 0.0f);
-	
+	// vec3 origin(0.0f, 0.0f, 0.0f);
+	// vec3 lower_left_corner(-2.0f, -1.0f, -1.0f);
+	// vec3 horizontal(4.0f, 0.0f, 0.0f);
+	// vec3 vertical(0.0f, 2.0f, 0.0f);
+
+	Camera camera(
+		vec3(0.0f, 5.0f, 1.0f),
+		vec3(0.0f, 0.0f, 0.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		16.0f / 9.0f);
+
+	Sphere sphere(vec3(0.0f, 0.0f, 0.0f), 1.0f);
+
 	// Rendering
 	screenSurface = SDL_GetWindowSurface(win);
 	SDL_LockSurface(screenSurface);
@@ -74,8 +91,33 @@ int main(int argc, char* args[])
 	{
 		for (int y = 0; y < screenSurface->h; ++y)
 		{
-			auto color = (abs(640 / 2 - x) < 30 && abs(480 / 2 - y) < 30) ? 0x00FFFF00 : rand();
-			putpixel(screenSurface, x, y, color);
+			float s = float(x) / float(kWidth);
+			float t = float(y) / float(kHeight);
+
+			Ray ray = camera.GetRay(s, t);
+			IntersectInfo info;
+
+			char c = 0;
+			if (sphere.Trace(ray, info))
+				c = char(255);
+
+			Color32 color;
+			color.r = c;
+			color.g = c;
+			color.b = c;
+			color.a = char(255);
+			putpixel(screenSurface, x, y, color.Int);
+
+
+			/*
+			Raymond::Color32 color;
+			color.r = rand() % 255;
+			color.g = rand() % 255;
+			color.b = rand() % 255;
+			color.a = char(255);
+			// auto color = (abs(640 / 2 - x) < 30 && abs(480 / 2 - y) < 30) ? 0x00FFFFFF : rand();
+			putpixel(screenSurface, x, y, color.Int);
+			*/
 		}
 	}
 	SDL_UnlockSurface(screenSurface);
