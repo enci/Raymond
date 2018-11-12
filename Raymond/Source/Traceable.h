@@ -1,5 +1,7 @@
 #pragma once
 
+#include "glm.hpp"
+
 namespace Raymond
 {
 class Ray;

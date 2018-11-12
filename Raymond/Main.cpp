@@ -4,6 +4,7 @@
 #include "Source/Color.h"
 #include "Source/Camera.h"
 #include "Source/Sphere.h"
+#include "Source/Renderer.h"
 
 using namespace std;
 using namespace glm;
@@ -54,7 +55,7 @@ int main(int argc, char* args[])
 		return 1;
 	}
 
-	SDL_Window* win = SDL_CreateWindow("Hello World!", 100, 100,
+	SDL_Window* win = SDL_CreateWindow("Raymond", 100, 100,
 		kWidth, kHeight, SDL_WINDOW_SHOWN);
 
 	if (win == nullptr)
@@ -94,6 +95,11 @@ int main(int argc, char* args[])
 			float(kWidth) / float(kHeight));
 
 		Sphere sphere(vec3(0.0f, 0.0f, 0.0f), 1.0f);
+		Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
+
+		Renderer renderer;
+		renderer.Scene.push_back(&sphere);
+		renderer.Scene.push_back(&sphere2);
 
 		// Rendering
 		screenSurface = SDL_GetWindowSurface(win);
@@ -110,7 +116,8 @@ int main(int argc, char* args[])
 
 				char c = 0;
 				Color32 color;
-				if (sphere.Trace(ray, info))
+
+				if (renderer.Trace(ray, info))
 				{
 					info.Normal = (info.Normal + vec3(1.0f, 1.0f, 1.0f)) * 0.5f;
 					color = Color32(info.Normal);
