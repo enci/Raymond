@@ -68,63 +68,12 @@ int main(int argc, char* args[])
 	SDL_Surface* screenSurface = nullptr;
 
 	// The image we will load and show on the screen
-	SDL_Surface* helloWorld = nullptr;
-
-	// vec3 origin(0.0f, 0.0f, 0.0f);
-	// vec3 lower_left_corner(-2.0f, -1.0f, -1.0f);
-	// vec3 horizontal(4.0f, 0.0f, 0.0f);
-	// vec3 vertical(0.0f, 2.0f, 0.0f);
-
-	Camera camera(
-		vec3(0.0f, 5.0f, 1.0f),
-		vec3(0.0f, 0.0f, 0.0f),
-		vec3(0.0f, 0.0f, 1.0f),
-		60.0f,
-		16.0f / 9.0f);
-
-	Sphere sphere(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-
-	// Rendering
-	screenSurface = SDL_GetWindowSurface(win);
-	SDL_LockSurface(screenSurface);
-	for (int x = 0; x < screenSurface->w; ++x)
-	{
-		for (int y = 0; y < screenSurface->h; ++y)
-		{
-			float s = float(x) / float(kWidth);
-			float t = float(y) / float(kHeight);
-
-			Ray ray = camera.GetRay(s, t);
-			IntersectInfo info;
-
-			char c = 0;
-			if (sphere.Trace(ray, info))
-				c = char(255);
-
-			Color32 color;
-			color.r = c;
-			color.g = c;
-			color.b = c;
-			color.a = char(255);
-			putpixel(screenSurface, x, y, color.Int);
-
-
-			/*
-			Raymond::Color32 color;
-			color.r = rand() % 255;
-			color.g = rand() % 255;
-			color.b = rand() % 255;
-			color.a = char(255);
-			// auto color = (abs(640 / 2 - x) < 30 && abs(480 / 2 - y) < 30) ? 0x00FFFFFF : rand();
-			putpixel(screenSurface, x, y, color.Int);
-			*/
-		}
-	}
-	SDL_UnlockSurface(screenSurface);
-	SDL_UpdateWindowSurface(win);
+	SDL_Surface* helloWorld = nullptr;	
 
 	SDL_Event event;
 	bool quit = false;	
+
+	float theta = 0.0f;
 
 	while (!quit)
 	{
@@ -135,7 +84,45 @@ int main(int argc, char* args[])
 				quit = true;
 			}
 		}		
-		SDL_Delay(16);
+
+		theta += 0.1f;
+		Camera camera(
+			vec3(5.0f * cos(theta), 5.0f * sin(theta), 0.0f),
+			vec3(0.0f, 0.0f, 0.0f),
+			vec3(0.0f, 0.0f, 1.0f),
+			60.0f,
+			float(kWidth) / float(kHeight));
+
+		Sphere sphere(vec3(0.0f, 0.0f, 0.0f), 1.0f);
+
+		// Rendering
+		screenSurface = SDL_GetWindowSurface(win);
+		SDL_LockSurface(screenSurface);
+		for (int x = 0; x < screenSurface->w; ++x)
+		{
+			for (int y = 0; y < screenSurface->h; ++y)
+			{
+				float s = float(x) / float(kWidth);
+				float t = float(y) / float(kHeight);
+
+				Ray ray = camera.GetRay(s, t);
+				IntersectInfo info;
+
+				char c = 0;
+				Color32 color;
+				if (sphere.Trace(ray, info))
+				{
+					info.Normal = (info.Normal + vec3(1.0f, 1.0f, 1.0f)) * 0.5f;
+					color = Color32(info.Normal);
+				}
+				putpixel(screenSurface, x, y, color.Int);
+
+			}
+		}
+		SDL_UnlockSurface(screenSurface);
+		SDL_UpdateWindowSurface(win);
+
+		//SDL_Delay(16);
 	}
 			
 	return 0;
