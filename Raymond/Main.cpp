@@ -5,6 +5,8 @@
 #include "Source/Camera.h"
 #include "Source/Sphere.h"
 #include "Source/Renderer.h"
+#include "Source/Plane.h"
+#include "Source/Box.h"
 
 using namespace std;
 using namespace glm;
@@ -76,6 +78,31 @@ int main(int argc, char* args[])
 
 	float theta = 0.0f;
 
+	Sphere sphere(vec3(0.0f, 0.0f, 1.0f), 1.0f);
+	Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
+	Plane plane;
+	Box box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 2.5f));
+
+	Light mainLight;
+	mainLight.Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight.Intensity = 1.0f;
+	mainLight.Position = vec3(5.0f, 10.f, 10.0f);
+	mainLight.Type = LightType::Point;
+
+	Light fillLight;
+	fillLight.Color = vec3(0.2f, 0.2f, 1.0f);
+	fillLight.Intensity = 0.3f;
+	fillLight.Position = vec3(-10.0f, 10.f, 5.0f);
+	fillLight.Type = LightType::Point;
+
+	Renderer renderer;
+	renderer.Scene.push_back(&plane);
+	//renderer.Scene.push_back(&sphere);
+	//renderer.Scene.push_back(&sphere2);
+	renderer.Scene.push_back(&box);
+	renderer.Lights.push_back(mainLight);
+	renderer.Lights.push_back(fillLight);
+
 	while (!quit)
 	{
 		while (SDL_PollEvent(&event))
@@ -88,18 +115,11 @@ int main(int argc, char* args[])
 
 		theta += 0.1f;
 		Camera camera(
-			vec3(5.0f * cos(theta), 5.0f * sin(theta), 0.0f),
+			vec3(5.0f * cos(theta), 5.0f * sin(theta), 3.0f),
 			vec3(0.0f, 0.0f, 0.0f),
 			vec3(0.0f, 0.0f, 1.0f),
 			60.0f,
 			float(kWidth) / float(kHeight));
-
-		Sphere sphere(vec3(0.0f, 0.0f, 0.0f), 1.0f);
-		Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
-
-		Renderer renderer;
-		renderer.Scene.push_back(&sphere);
-		renderer.Scene.push_back(&sphere2);
 
 		// Rendering
 		screenSurface = SDL_GetWindowSurface(win);
@@ -113,23 +133,15 @@ int main(int argc, char* args[])
 
 				Ray ray = camera.GetRay(s, t);
 				IntersectInfo info;
-
-				char c = 0;
-				Color32 color;
-
-				if (renderer.Trace(ray, info))
-				{
-					info.Normal = (info.Normal + vec3(1.0f, 1.0f, 1.0f)) * 0.5f;
-					color = Color32(info.Normal);
-				}
+				auto fcolor = renderer.Trace(ray, info);
+				Color32 color = Color32(fcolor);
+				
 				putpixel(screenSurface, x, y, color.Int);
 
 			}
 		}
 		SDL_UnlockSurface(screenSurface);
 		SDL_UpdateWindowSurface(win);
-
-		//SDL_Delay(16);
 	}
 			
 	return 0;

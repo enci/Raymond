@@ -9,7 +9,8 @@ struct Color32
 	{
 		struct
 		{
-			unsigned char r, g, b, a;
+			//unsigned char r, g, b, a;
+			unsigned char b, g, r, a;
 		};
 		int Int;
  	};
@@ -21,18 +22,18 @@ struct Color32
 
 inline Color32::Color32(const glm::vec3& color)
 {
-	r = unsigned char(color.r * 255.99f);
-	g = unsigned char(color.g * 255.99f);
-	b = unsigned char(color.b * 255.99f);
+	r = unsigned char(glm::clamp(color.r * 255.99f, 0.0f, 255.0f));
+	g = unsigned char(glm::clamp(color.g * 255.99f, 0.0f, 255.0f));
+	b = unsigned char(glm::clamp(color.b * 255.99f, 0.0f, 255.0f));
 	a = unsigned char(255);
 }
 
 inline Color32::Color32(const glm::vec4& color)
 {
-	r = unsigned char(color.r * 255.99f);
-	g = unsigned char(color.g * 255.99f);
-	b = unsigned char(color.b * 255.99f);
-	a = unsigned char(color.a * 255.99f);
+	r = unsigned char(glm::clamp(color.r * 255.99f, 0.0f, 255.0f));
+	g = unsigned char(glm::clamp(color.g * 255.99f, 0.0f, 255.0f));
+	b = unsigned char(glm::clamp(color.b * 255.99f, 0.0f, 255.0f));
+	a = unsigned char(glm::clamp(color.a * 255.99f, 0.0f, 255.0f));
 }
 
 }

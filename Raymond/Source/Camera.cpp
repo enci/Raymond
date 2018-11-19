@@ -26,6 +26,6 @@ Camera::Camera(
 
 Ray Camera::GetRay(float s, float t) const
 {
-	return Ray(_origin, _lowerLeftCorner + s * _horizontal + t * _vertical - _origin);
+	return Ray(_origin, _lowerLeftCorner + s * _horizontal + (1.0f -  t) * _vertical - _origin);
 }
 

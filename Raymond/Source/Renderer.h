@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "Light.h"
 
 namespace Raymond
 {
@@ -10,9 +11,10 @@ struct IntersectInfo;
 class Renderer
 {	
 public:
-	//virtual void Render();
-	virtual bool Trace(const Ray& ray, IntersectInfo& info);
+	virtual ~Renderer() = default;
+	virtual glm::vec3 Trace(const Ray& ray, IntersectInfo& info);
 	std::vector<Traceable*> Scene;
+	std::vector<Light> Lights;
 };
 
 }
