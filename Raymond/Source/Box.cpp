@@ -1,10 +1,20 @@
 #include "Box.h"
 #include "Ray.h"
-//#include "gtc/s"
 
 using namespace Raymond;
 using namespace glm;
 
+Ray Transform(const Ray& ray, const mat4& transform)
+{
+	const vec4 origin(ray.Origin, 1.0f);
+	const vec4 direction(ray.Direction, 0.0f);
+	return Ray(vec3(transform * origin), vec3(transform * direction));
+}
+
+void Transform(IntersectInfo& info, const mat4& transform)
+{
+	
+}
 
 Box::Box(const vec3& position, const vec3& extent)
 	: _position(position)
@@ -13,20 +23,9 @@ Box::Box(const vec3& position, const vec3& extent)
 
 bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 {
-	/*
-	Ray r;
-	auto transform = GetTransform();
-	transpose();
-	r.Origin = ray.Origin * GetTransform();
-	r.Direction = 
-	*/
+	Ray r = Transform(ray, _inverse);
 
-	mat4 inv = inverse(Transform);
-	Ray r = ray;
-	vec4 origin(r.Origin, 1.0f);
-	vec4 direction(r.Direction, 0.0f);
-	r.Origin = vec3(inv * origin);
-	r.Direction = vec3(inv * direction);
+	//Ray r = ray;
 
 	const vec3 boxmax = _position + _extent;
 	const vec3 boxmin = _position - _extent;
@@ -59,7 +58,8 @@ bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 		normal.z /= boxmax.z - boxmin.z;
 
 		// 3. Keep the largest axis
-		if (abs(normal.x) > abs(normal.y)) {
+		if (abs(normal.x) > abs(normal.y))
+		{
 			normal.y = 0.0f;
 			if (abs(normal.x) > abs(normal.z))
 				normal.z = 0;
@@ -74,10 +74,12 @@ bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 				normal.y = 0;
 		}
 
-		// 4. Normalize to unit and fill-in rest
-		info.Normal =  vec4(normalize(normal), 0.0f) * Transform;
-		info.Position = vec4(position, 1.0f) * Transform;
-		info.Distance = t;
+		// 4. Normalize to unit and fill-in rest		
+		info.Normal =  vec3(_transform * vec4(normalize(normal), 0.0f));
+		auto l =  length(info.Normal);
+		info.Position = vec3(_transform * vec4(position, 1.0f));
+		info.Distance = t / l;
+		info.Normal /= l;
 		return true;
 	}
 
@@ -85,13 +87,15 @@ bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 
 }
 
-bool Box::Test(const Ray& r) const
+bool Box::Test(const Ray& ray) const
 {
+	Ray r = Transform(ray, _inverse);
+	//Ray r = ray;
+
 	const vec3 boxmax = _position + _extent;
 	const vec3 boxmin = _position - _extent;
 
 	const vec3 oneoverdir(1.0f / r.Direction.x, 1.0f / r.Direction.y, 1.0f / r.Direction.z);
-
 	const vec3 tmin = (boxmin - r.Origin) * oneoverdir;
 	const vec3 tmax = (boxmax - r.Origin) * oneoverdir;
 	const vec3 realmin = min(tmax, tmin);

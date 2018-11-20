@@ -19,6 +19,7 @@ glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 	for (auto t : Scene)
 	{
 		IntersectInfo tInfo;
+		tInfo.Object = t;
 		if(t->Trace(ray, tInfo))
 		{
 			if(tInfo.Distance < nearest && tInfo.Distance > 0.00001f)
@@ -29,21 +30,27 @@ glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 		}
 	}
 
+
+	//color = (normalize(info.Normal) * 0.5f) + vec3(0.5f, 0.5f, 0.5f); // Shade(l, info);
+
 	if(nearest != FLT_MAX)
 	{
 		for (auto l : Lights)
 		{
 			vec3 direction = normalize(l.Position - info.Position);
-			vec3 position = info.Position + direction * 0.00001f;
+			vec3 position = info.Position + direction * 0.001f;
 			Ray shadowRay(position, direction);
 
 			bool lit = true;
 			for (auto t : Scene)
 			{
+				//if(info.Object == t)
+				//	continue;
 
 				if(t->Test(shadowRay))
 				{
 					lit = false;
+					break;
 				}
 			}
 
@@ -53,6 +60,7 @@ glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 			}
 		}
 	}
+	
 
 	return color;
 }

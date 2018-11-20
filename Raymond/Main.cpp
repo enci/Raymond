@@ -78,30 +78,43 @@ int main(int argc, char* args[])
 
 	Sphere sphere(vec3(0.0f, 0.0f, 1.0f), 1.0f);
 	Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
+	mat4 transform = mat4(1.0f);
+	//transform = scale(transform, vec3(1.0f, 1.0f, 5.0f));
+	sphere2.SetTransform(transform);
 	Plane plane;
-	Box box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 2.5f));
-	//box.Transform = glm::rotate(box.Transform, radians(45.0f), vec3(1.0f, 0.0f, 0.0f));
-	box.Transform = translate(box.Transform, vec3(1.0f, 0.0f, 0.0f));
+	Box box(vec3(0.0f, 0.0f, 0.0f), vec3(0.6f, 0.6f, 2.5f));
+	transform = mat4(1.0f);
+	transform = rotate(transform, radians(45.0f), vec3(1.0f, 0.0f, 0.0f));
+	transform = translate(transform, vec3(1.0f, 0.0f, 0.0f));
+	//transform = scale(transform, vec3(2.0f, 2.0f, 2.0f));
+	box.SetTransform(transform);
 
 	Light mainLight;
 	mainLight.Color = vec3(1.0f, 1.0f, 1.0f);
-	mainLight.Intensity = 1.0f;
+	mainLight.Intensity = 0.9f;
 	mainLight.Position = vec3(5.0f, 10.f, 10.0f);
 	mainLight.Type = LightType::Point;
 
 	Light fillLight;
-	fillLight.Color = vec3(0.2f, 0.2f, 1.0f);
-	fillLight.Intensity = 0.3f;
-	fillLight.Position = vec3(-10.0f, 10.f, 5.0f);
+	fillLight.Color = vec3(1.0f, 1.0f, 1.0f);
+	fillLight.Intensity = 0.2f;
+	fillLight.Position = vec3(-10.0f, 10.f, 15.0f);
 	fillLight.Type = LightType::Point;
+
+	Light fillLight2;
+	fillLight2.Color = vec3(1.0f, 1.0f, 1.0f);
+	fillLight2.Intensity = 0.3f;
+	fillLight2.Position = vec3(10.0f, -10.f, 15.0f);
+	fillLight2.Type = LightType::Point;
 
 	Renderer renderer;
 	renderer.Scene.push_back(&plane);
-	//renderer.Scene.push_back(&sphere);
-	//renderer.Scene.push_back(&sphere2);
+	renderer.Scene.push_back(&sphere);
+	renderer.Scene.push_back(&sphere2);
 	renderer.Scene.push_back(&box);
 	renderer.Lights.push_back(mainLight);
 	renderer.Lights.push_back(fillLight);
+	renderer.Lights.push_back(fillLight2);
 
 	while (!quit)
 	{
@@ -134,7 +147,7 @@ int main(int argc, char* args[])
 				Ray ray = camera.GetRay(s, t);
 				IntersectInfo info;
 				auto fcolor = renderer.Trace(ray, info);
-				const float exp = 1.0f / 2.2f;
+				const float exp = 1.0f;
 				fcolor = pow(fcolor, vec3(exp, exp, exp));
 				Color32 color = Color32(fcolor);
 				
