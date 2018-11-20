@@ -1,6 +1,7 @@
 #include <iostream>
 #include "SDL.h"
 #include "glm.hpp"
+#include "gtc/matrix_transform.hpp"
 #include "Source/Color.h"
 #include "Source/Camera.h"
 #include "Source/Sphere.h"
@@ -70,9 +71,6 @@ int main(int argc, char* args[])
 	// The surface contained by the window
 	SDL_Surface* screenSurface = nullptr;
 
-	// The image we will load and show on the screen
-	SDL_Surface* helloWorld = nullptr;	
-
 	SDL_Event event;
 	bool quit = false;	
 
@@ -82,6 +80,8 @@ int main(int argc, char* args[])
 	Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
 	Plane plane;
 	Box box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 2.5f));
+	//box.Transform = glm::rotate(box.Transform, radians(45.0f), vec3(1.0f, 0.0f, 0.0f));
+	box.Transform = translate(box.Transform, vec3(1.0f, 0.0f, 0.0f));
 
 	Light mainLight;
 	mainLight.Color = vec3(1.0f, 1.0f, 1.0f);
@@ -134,10 +134,11 @@ int main(int argc, char* args[])
 				Ray ray = camera.GetRay(s, t);
 				IntersectInfo info;
 				auto fcolor = renderer.Trace(ray, info);
+				const float exp = 1.0f / 2.2f;
+				fcolor = pow(fcolor, vec3(exp, exp, exp));
 				Color32 color = Color32(fcolor);
 				
 				putpixel(screenSurface, x, y, color.Int);
-
 			}
 		}
 		SDL_UnlockSurface(screenSurface);

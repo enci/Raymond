@@ -34,12 +34,13 @@ glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 		for (auto l : Lights)
 		{
 			vec3 direction = normalize(l.Position - info.Position);
-			vec3 position = info.Position + direction * 0.0001f;
+			vec3 position = info.Position + direction * 0.00001f;
 			Ray shadowRay(position, direction);
 
 			bool lit = true;
 			for (auto t : Scene)
 			{
+
 				if(t->Test(shadowRay))
 				{
 					lit = false;

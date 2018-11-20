@@ -1,5 +1,6 @@
 #include "Box.h"
 #include "Ray.h"
+//#include "gtc/s"
 
 using namespace Raymond;
 using namespace glm;
@@ -10,8 +11,23 @@ Box::Box(const vec3& position, const vec3& extent)
 	, _extent(extent)
 {}
 
-bool Box::Trace(const Ray& r, IntersectInfo& info) const
+bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 {
+	/*
+	Ray r;
+	auto transform = GetTransform();
+	transpose();
+	r.Origin = ray.Origin * GetTransform();
+	r.Direction = 
+	*/
+
+	mat4 inv = inverse(Transform);
+	Ray r = ray;
+	vec4 origin(r.Origin, 1.0f);
+	vec4 direction(r.Direction, 0.0f);
+	r.Origin = vec3(inv * origin);
+	r.Direction = vec3(inv * direction);
+
 	const vec3 boxmax = _position + _extent;
 	const vec3 boxmin = _position - _extent;
 
@@ -59,8 +75,8 @@ bool Box::Trace(const Ray& r, IntersectInfo& info) const
 		}
 
 		// 4. Normalize to unit and fill-in rest
-		info.Normal = normalize(normal);
-		info.Position = position;
+		info.Normal =  vec4(normalize(normal), 0.0f) * Transform;
+		info.Position = vec4(position, 1.0f) * Transform;
 		info.Distance = t;
 		return true;
 	}
