@@ -1,19 +1,20 @@
 #pragma once
 
+#include <memory>
 #include "glm.hpp"
 
 namespace Raymond
 {
 class Ray;
 class Traceable;
-class Material;
+struct Material;
 
 struct IntersectInfo
 {
 	float Distance;
 	glm::vec3 Position;
 	glm::vec3 Normal;
-	Traceable* Object;
+	std::weak_ptr<Traceable> Object;
 };
 
 class Traceable

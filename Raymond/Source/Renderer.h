@@ -1,14 +1,16 @@
 #pragma once
-#include <vector>
-#include "Light.h"
-#include "Material.h"
+
+#include <memory>
+#include <glm.hpp>
 
 namespace Raymond
 {
+
 class Ray;
-class Traceable;
-class Camera;
 struct IntersectInfo;
+struct Sensor;
+struct Scene;
+struct Light;
 
 class Renderer
 {	
@@ -16,9 +18,10 @@ public:
 	virtual ~Renderer() = default;
 	virtual glm::vec3 Trace(const Ray& ray, IntersectInfo& info);
 	glm::vec3 Shade(const Light& light, const IntersectInfo& info) const;
-	std::vector<Traceable*> Scene;
-	std::vector<Light*> Lights;
-	Camera* camera = nullptr;
+	void Render();
+	Scene* Scene = nullptr;
+	std::shared_ptr<Sensor> Sensor;
+	bool IsDone = false;
 };
 
 }

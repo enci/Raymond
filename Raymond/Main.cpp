@@ -8,6 +8,9 @@
 #include "Source/Renderer.h"
 #include "Source/Plane.h"
 #include "Source/Box.h"
+#include "Source/Material.h"
+#include "Source/Scene.h"
+#include "Source/Light.h"
 
 using namespace std;
 using namespace glm;
@@ -63,44 +66,45 @@ void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 int kWidth = 640;
 int kHeight = 480;
 
-void CreateCornellBox(Renderer& renderer)
+Scene* CreateCornellBox()
 {
+	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
-	Sphere* sphere = new Sphere(vec3(0.0f, 0.0f, 0.25f), 0.25f);
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.25f), 0.25f);
 	vec3 zero(0.0f, 0.0f, 0.0f);
 
 	vec3 bottomPos(0.0f, 0.0f, -0.2f);
-	Box* bottom = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
+	auto bottom = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
 	transform = mat4(1.0f);
 	transform = translate(transform, bottomPos);
 	bottom->SetTransform(transform);
 
 	vec3 topPos(0.0f, 0.0f, 2.2f);
-	Box* top = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
+	auto top = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
 	transform = mat4(1.0f);
 	transform = translate(transform, topPos);
 	top->SetTransform(transform);
 
 	vec3 backPos(0.0f, -1.2f, 1.0f);
-	Box* back = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.2f, 1.0f));
+	auto back = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.2f, 1.0f));
 	transform = mat4(1.0f);
 	transform = translate(transform, backPos);
 	back->SetTransform(transform);
 
 	vec3 leftPos(1.2f, 0.0f, 1.0f);
-	Box* left = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(0.2f, 1.0f, 1.0f));
+	auto left = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(0.2f, 1.0f, 1.0f));
 	transform = mat4(1.0f);
 	transform = translate(transform, leftPos);
 	left->SetTransform(transform);
 
 	vec3 rightPos(-1.2f, 0.0f, 1.0f);
-	Box* right = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(0.2f, 1.0f, 1.0f));
+	auto right = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(0.2f, 1.0f, 1.0f));
 	transform = mat4(1.0f);
 	transform = translate(transform, rightPos);
 	right->SetTransform(transform);
 
 	vec3 lightPos(0.0f, 0.0f, 1.2f);
-	Light* mainLight = new Light();
+	auto mainLight = make_shared<Light>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
 	mainLight->Intensity = 5.0f;
 	mainLight->Position = lightPos;
@@ -127,16 +131,17 @@ void CreateCornellBox(Renderer& renderer)
 	//renderer.Scene.push_back(&plane);	
 	//renderer.Scene.push_back(&sphere2);
 
-	renderer.Scene.push_back(sphere);
-	renderer.Scene.push_back(bottom);
-	renderer.Scene.push_back(top);
-	renderer.Scene.push_back(back);
-	renderer.Scene.push_back(left);
-	renderer.Scene.push_back(right);
+	scene->Objects.push_back(sphere);
+	scene->Objects.push_back(bottom);
+	scene->Objects.push_back(top);
+	scene->Objects.push_back(back);
+	scene->Objects.push_back(left);
+	scene->Objects.push_back(right);
 	//renderer.Scene.push_back(lightSphere);
-
 	//renderer.Lights.push_back(fillLight2);
-	renderer.Lights.push_back(mainLight);
+	scene->Lights.push_back(mainLight);
+
+	return scene;
 	
 }
 
@@ -163,7 +168,6 @@ int main(int argc, char* args[])
 
 	SDL_Event event;
 	bool quit = false;	
-
 	float theta = pi<float>() * 0.5f;
 
 	/*
@@ -228,10 +232,7 @@ int main(int argc, char* args[])
 
 	Renderer renderer;
 
-	CreateCornellBox(renderer);
-
-	//renderer.Lights.push_back(&fillLight);	;
-
+	renderer.Scene = CreateCornellBox();
 	float r = 5.0f;
 
 	while (!quit)
@@ -245,14 +246,13 @@ int main(int argc, char* args[])
 		}		
 
 		theta += 0.05f;
-		Camera camera(
+		renderer.Scene->Camera = make_shared<Camera>(
 			vec3(r * cos(theta), r * sin(theta), 1.0f),
 			vec3(0.0f, 0.0f, 1.0f),
 			vec3(0.0f, 0.0f, 1.0f),
 			60.0f,
 			float(kWidth) / float(kHeight));
 
-		renderer.camera = &camera;
 		const int samples = 8;
 
 		// Rendering
@@ -268,7 +268,7 @@ int main(int argc, char* args[])
 					float u = float(x + RandInRange(-0.5f, 0.5f)) / float(kWidth);
 					float v = float(y + RandInRange(-0.5f, 0.5f)) / float(kHeight);
 
-					Ray ray = camera.GetRay(u, v);
+					Ray ray = renderer.Scene->Camera->GetRay(u, v);
 					IntersectInfo info;
 					fcolor += renderer.Trace(ray, info);
 				}

@@ -35,6 +35,8 @@
     <ClInclude Include="Source\Plane.h" />
     <ClInclude Include="Source\Ray.h" />
     <ClInclude Include="Source\Renderer.h" />
+    <ClInclude Include="Source\Scene.h" />
+    <ClInclude Include="Source\Sensor.h" />
     <ClInclude Include="Source\Sphere.h" />
     <ClInclude Include="Source\Traceable.h" />
   </ItemGroup>
