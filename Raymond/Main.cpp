@@ -13,6 +13,19 @@ using namespace std;
 using namespace glm;
 using namespace Raymond;
 
+/// Returns a random float between zero and 1
+inline float RandFloat() { return static_cast<float>((rand()) / (RAND_MAX + 1.0)); }
+
+/// Returns a random float between x and y
+inline float RandInRange(float x, float y) { return x + RandFloat()*(y - x); }
+
+class Checkerboard : public SolidTexture
+{
+public:
+	~Checkerboard() override = default;
+	vec3 GetColor(const vec3& position) const override;
+};
+
 void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 {
 	int bpp = surface->format->BytesPerPixel;
@@ -50,6 +63,83 @@ void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 int kWidth = 640;
 int kHeight = 480;
 
+void CreateCornellBox(Renderer& renderer)
+{
+	mat4 transform = mat4(1.0f);
+	Sphere* sphere = new Sphere(vec3(0.0f, 0.0f, 0.25f), 0.25f);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+
+	vec3 bottomPos(0.0f, 0.0f, -0.2f);
+	Box* bottom = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
+	transform = mat4(1.0f);
+	transform = translate(transform, bottomPos);
+	bottom->SetTransform(transform);
+
+	vec3 topPos(0.0f, 0.0f, 2.2f);
+	Box* top = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
+	transform = mat4(1.0f);
+	transform = translate(transform, topPos);
+	top->SetTransform(transform);
+
+	vec3 backPos(0.0f, -1.2f, 1.0f);
+	Box* back = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 0.2f, 1.0f));
+	transform = mat4(1.0f);
+	transform = translate(transform, backPos);
+	back->SetTransform(transform);
+
+	vec3 leftPos(1.2f, 0.0f, 1.0f);
+	Box* left = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(0.2f, 1.0f, 1.0f));
+	transform = mat4(1.0f);
+	transform = translate(transform, leftPos);
+	left->SetTransform(transform);
+
+	vec3 rightPos(-1.2f, 0.0f, 1.0f);
+	Box* right = new Box(vec3(0.0f, 0.0f, 0.0f), vec3(0.2f, 1.0f, 1.0f));
+	transform = mat4(1.0f);
+	transform = translate(transform, rightPos);
+	right->SetTransform(transform);
+
+	vec3 lightPos(0.0f, 0.0f, 1.2f);
+	Light* mainLight = new Light();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 5.0f;
+	mainLight->Position = lightPos;
+	mainLight->Type = LightType::Point;
+
+	Sphere* lightSphere = new Sphere(lightPos, 0.05f);
+	
+	Material* red = new Material();
+	red->Color = vec3(1.0f, 0.0f, 0.0f);
+	left->SetMaterial(red);
+
+	Material* green = new Material();
+	green->Color = vec3(0.0f, 1.0f, 0.0f);
+	right->SetMaterial(green);
+
+	Material* lightMaterial = new Material();
+	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	lightMaterial->Emissive = 1.0f;
+	lightSphere->SetMaterial(lightMaterial);
+
+	//Material checker;
+	//checker.Texture = new Checkerboard();
+	//plane.SetMaterial(&checker);	
+	//renderer.Scene.push_back(&plane);	
+	//renderer.Scene.push_back(&sphere2);
+
+	renderer.Scene.push_back(sphere);
+	renderer.Scene.push_back(bottom);
+	renderer.Scene.push_back(top);
+	renderer.Scene.push_back(back);
+	renderer.Scene.push_back(left);
+	renderer.Scene.push_back(right);
+	//renderer.Scene.push_back(lightSphere);
+
+	//renderer.Lights.push_back(fillLight2);
+	renderer.Lights.push_back(mainLight);
+	
+}
+
 int main(int argc, char* args[])
 {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -74,8 +164,9 @@ int main(int argc, char* args[])
 	SDL_Event event;
 	bool quit = false;	
 
-	float theta = 0.0f;
+	float theta = pi<float>() * 0.5f;
 
+	/*
 	Sphere sphere(vec3(0.0f, 0.0f, 1.0f), 1.0f);
 	Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
 	mat4 transform = mat4(1.0f);
@@ -107,14 +198,41 @@ int main(int argc, char* args[])
 	fillLight2.Position = vec3(10.0f, -10.f, 15.0f);
 	fillLight2.Type = LightType::Point;
 
+	Material blue;
+	blue.Color = vec3(0.0f, 0.0f, 1.0f);
+	box.SetMaterial(&blue);
+
+	Material red;
+	red.Color = vec3(1.0f, 0.0f, 0.0f);
+	red.Specular = 0.7f;
+	red.SpecularPower = 32.0f;
+	sphere.SetMaterial(&red);
+
+	Material green;
+	green.Color = vec3(0.0f, 1.0f, 0.0f);
+	sphere2.SetMaterial(&green);
+
+	Material checker;
+	checker.Texture = new Checkerboard();
+	plane.SetMaterial(&checker);
+
 	Renderer renderer;
 	renderer.Scene.push_back(&plane);
 	renderer.Scene.push_back(&sphere);
 	renderer.Scene.push_back(&sphere2);
 	renderer.Scene.push_back(&box);
-	renderer.Lights.push_back(mainLight);
-	renderer.Lights.push_back(fillLight);
-	renderer.Lights.push_back(fillLight2);
+	renderer.Lights.push_back(&mainLight);
+	renderer.Lights.push_back(&fillLight);
+	renderer.Lights.push_back(&fillLight2);
+	*/
+
+	Renderer renderer;
+
+	CreateCornellBox(renderer);
+
+	//renderer.Lights.push_back(&fillLight);	;
+
+	float r = 5.0f;
 
 	while (!quit)
 	{
@@ -126,13 +244,16 @@ int main(int argc, char* args[])
 			}
 		}		
 
-		theta += 0.1f;
+		theta += 0.05f;
 		Camera camera(
-			vec3(5.0f * cos(theta), 5.0f * sin(theta), 3.0f),
-			vec3(0.0f, 0.0f, 0.0f),
+			vec3(r * cos(theta), r * sin(theta), 1.0f),
+			vec3(0.0f, 0.0f, 1.0f),
 			vec3(0.0f, 0.0f, 1.0f),
 			60.0f,
 			float(kWidth) / float(kHeight));
+
+		renderer.camera = &camera;
+		const int samples = 8;
 
 		// Rendering
 		screenSurface = SDL_GetWindowSurface(win);
@@ -141,13 +262,18 @@ int main(int argc, char* args[])
 		{
 			for (int y = 0; y < screenSurface->h; ++y)
 			{
-				float s = float(x) / float(kWidth);
-				float t = float(y) / float(kHeight);
+				vec3 fcolor(0.0f, 0.0f, 0.0f);
+				for (int s = 0; s < samples; s++)
+				{
+					float u = float(x + RandInRange(-0.5f, 0.5f)) / float(kWidth);
+					float v = float(y + RandInRange(-0.5f, 0.5f)) / float(kHeight);
 
-				Ray ray = camera.GetRay(s, t);
-				IntersectInfo info;
-				auto fcolor = renderer.Trace(ray, info);
-				const float exp = 1.0f;
+					Ray ray = camera.GetRay(u, v);
+					IntersectInfo info;
+					fcolor += renderer.Trace(ray, info);
+				}
+				fcolor /= samples;
+				const float exp = 1.0f / 2.2f;
 				fcolor = pow(fcolor, vec3(exp, exp, exp));
 				Color32 color = Color32(fcolor);
 				
@@ -159,4 +285,11 @@ int main(int argc, char* args[])
 	}
 			
 	return 0;
+}
+
+vec3 Checkerboard::GetColor(const vec3 & position) const
+{
+	vec3 white(1, 1, 1);
+	vec3 black(0, 0, 0);
+	return (int(position.x) % 2 ^ int(position.y) % 2) ? white : black;
 }

@@ -14,7 +14,8 @@ public:
 		const glm::vec3& up,
 		float fov,
 		float aspect);
-	Raymond::Ray GetRay(float s, float t) const;
+	Ray GetRay(float s, float t) const;
+	const glm::vec3& Origin() const { return _origin; }
 
 private:
 	glm::vec3 _origin;

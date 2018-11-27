@@ -14,7 +14,7 @@ public:
 		: Center(center), Radius(radius) {}
 	~Sphere() override = default;
 	bool Trace(const Ray& r, IntersectInfo& info) const  override;
-	bool Test(const Ray& r) const override;
+	bool Test(const Ray& r, float tmax) const override;
 
 	glm::vec3 Center;
 	float Radius;

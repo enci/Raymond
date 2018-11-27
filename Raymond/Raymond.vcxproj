@@ -31,6 +31,7 @@
     <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\Color.h" />
     <ClInclude Include="Source\Light.h" />
+    <ClInclude Include="Source\Material.h" />
     <ClInclude Include="Source\Plane.h" />
     <ClInclude Include="Source\Ray.h" />
     <ClInclude Include="Source\Renderer.h" />

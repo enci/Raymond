@@ -25,8 +25,6 @@ bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 {
 	Ray r = Transform(ray, _inverse);
 
-	//Ray r = ray;
-
 	const vec3 boxmax = _position + _extent;
 	const vec3 boxmin = _position - _extent;
 
@@ -87,22 +85,21 @@ bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 
 }
 
-bool Box::Test(const Ray& ray) const
+bool Box::Test(const Ray& ray, float tmax) const
 {
 	Ray r = Transform(ray, _inverse);
-	//Ray r = ray;
 
 	const vec3 boxmax = _position + _extent;
 	const vec3 boxmin = _position - _extent;
 
 	const vec3 oneoverdir(1.0f / r.Direction.x, 1.0f / r.Direction.y, 1.0f / r.Direction.z);
-	const vec3 tmin = (boxmin - r.Origin) * oneoverdir;
-	const vec3 tmax = (boxmax - r.Origin) * oneoverdir;
-	const vec3 realmin = min(tmax, tmin);
-	const vec3 realmax = max(tmax, tmin);
+	const vec3 tempMin = (boxmin - r.Origin) * oneoverdir;
+	const vec3 tempMax = (boxmax - r.Origin) * oneoverdir;
+	const vec3 realmin = min(tempMax, tempMin);
+	const vec3 realmax = max(tempMax, tempMin);
 
 	float minmax = min(min(realmax.x, realmax.y), realmax.z);
 	float maxmin = max(max(realmin.x, realmin.y), realmin.z);
 
-	return minmax >= maxmin && maxmin > 0.0f;
+	return minmax >= maxmin && maxmin > 0.0f && maxmin < tmax;
 }

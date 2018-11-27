@@ -36,7 +36,7 @@ bool Sphere::Trace(const Ray& r, IntersectInfo& info) const
 	return false;
 }
 
-bool Sphere::Test(const Ray& r) const
+bool Sphere::Test(const Ray& r, float tmax) const
 {
 	vec3 oc = r.Origin - Center;
 	float a = dot(r.Direction, r.Direction);
@@ -47,11 +47,11 @@ bool Sphere::Test(const Ray& r) const
 	if (discriminant > 0.0f)
 	{
 		float t = (-b - sqrt(discriminant)) / (2.0f * a);
-		if (t > 0.0f)
+		if (t > 0.0f && t < tmax)
 			return true;
 
 		t = (-b + sqrt(discriminant)) / (2.0f * a);
-		if (t > 0)
+		if (t > 0 && t < tmax)
 			return true;
 	}
 

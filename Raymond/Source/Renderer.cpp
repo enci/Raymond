@@ -1,17 +1,39 @@
 #include "Renderer.h"
 #include "Traceable.h"
 #include "Ray.h"
+#include "Camera.h"
 
 using namespace Raymond;
 using namespace glm;
 
-vec3 Shade(const Light& light, const IntersectInfo& info)
+vec3 Renderer::Shade(const Light& light, const IntersectInfo& info) const
 {
-	vec3 d = normalize(light.Position - info.Position);
-	return light.Intensity * light.Color * dot(d, info.Normal);
+	static Material baseMaterial;
+	const Material* material = info.Object->GetMaterial();
+	if (!material) material = &baseMaterial;
+
+	vec3 color = material->Texture ?
+		material->Texture->GetColor(info.Position) :
+		material->Color;
+
+	vec3 output = color * material->Emissive;
+	vec3 d = light.Position - info.Position;
+	float r = d.length();
+	d = normalize(d);
+	float intensity = light.Intensity / (r*r);
+	output += color * intensity * light.Color * clamp(dot(d, info.Normal), 0.0f, 1.0f);
+
+	vec3 toEye = camera->Origin() - info.Position;
+	toEye = normalize(toEye);
+	vec3 h = toEye + d;
+	h = normalize(h);
+	output += material->Specular * light.Color * intensity *
+		pow(dot(h, info.Normal), material->SpecularPower);
+
+	return output; 
 }
 
-glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
+vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 {
 	vec3 color(0.0f, 0.0f, 0.0f);
 
@@ -30,24 +52,26 @@ glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 		}
 	}
 
-
 	//color = (normalize(info.Normal) * 0.5f) + vec3(0.5f, 0.5f, 0.5f); // Shade(l, info);
 
 	if(nearest != FLT_MAX)
 	{
 		for (auto l : Lights)
 		{
-			vec3 direction = normalize(l.Position - info.Position);
-			vec3 position = info.Position + direction * 0.001f;
+			vec3 direction = l->Position - info.Position;
+			int tmax = length(direction);
+			direction /= tmax;
+			vec3 position = info.Position; // + direction * 0.001f;
 			Ray shadowRay(position, direction);
 
 			bool lit = true;
+			
 			for (auto t : Scene)
 			{
-				//if(info.Object == t)
-				//	continue;
+				if(info.Object == t)
+					continue;
 
-				if(t->Test(shadowRay))
+				if(t->Test(shadowRay, tmax))
 				{
 					lit = false;
 					break;
@@ -56,11 +80,10 @@ glm::vec3 Renderer::Trace(const Ray& ray, IntersectInfo& info)
 
 			if(lit)
 			{
-				color += Shade(l, info);
+				color += Shade(*l, info);
 			}
 		}
 	}
 	
-
 	return color;
 }
