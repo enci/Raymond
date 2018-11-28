@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <glm.hpp>
+#include <vector>
+#include <thread>
 
 namespace std
 {
@@ -20,15 +22,24 @@ class Light;
 class Renderer
 {	
 public:
+
+	Renderer() = default; // TODO: Set init params in here
+
 	virtual ~Renderer();
-	virtual glm::vec3 Trace(const Ray& ray, IntersectInfo& info);
-	glm::vec3 Shade(const Light& light, const IntersectInfo& info) const;
+
+	virtual glm::vec3 Trace(const Ray& ray);
+	
 	void Render();
-	Scene* Scene = nullptr;
+
+	std::shared_ptr<Scene> Scene;
+
 	std::shared_ptr<Sensor> Sensor;
+
 	bool IsDone = false;
+
 private:
-	std::thread* worker = nullptr;
+	glm::vec3 Shade(const Light& light, const IntersectInfo& info) const;
+	std::vector<std::unique_ptr<std::thread>> _workers;
 };
 
 }

@@ -82,8 +82,8 @@ void UpdateSurface(SDL_Surface* surface, Sensor* sensor)
 			Putpixel(surface, x, y, sensor->GetPixel(x, y).Int);
 }
 
-int kWidth = 300;
-int kHeight = 300;
+int kWidth = 600;
+int kHeight = 600;
 
 Scene* CreateCornellBox()
 {
@@ -126,13 +126,12 @@ Scene* CreateCornellBox()
 
 	vec3 boxPos(0.25f, -0.3f, 0.6f);
 	auto box = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.6f));
-	//auto box = make_shared<Sphere>(vec3(0.25f, 0.25f, 1.0f), 0.20f);
 	transform = mat4(1.0f);
-	//transform = rotate(transform, 0.2f, vec3(1.0f, 0.0f, 0.0f));
 	transform = rotate(transform, 0.35f, vec3(0.0f, 0.0f, 1.0f));
 	transform = translate(transform, boxPos);
 	box->SetTransform(transform);
 
+	auto glassSphere = make_shared<Sphere>(vec3(0.3f, 0.4f, 0.25f), 0.25f);
 
 	vec3 lightPos(0.0f, 0.0f, 1.8f);
 	auto mainLight = make_shared<Light>();
@@ -143,25 +142,33 @@ Scene* CreateCornellBox()
 
 	auto lightSphere = make_shared<Sphere>(lightPos, 0.05f);
 	
-	Material* red = new Material();
+	auto red = make_shared<Material>();
 	red->Color = vec3(1.0f, 0.0f, 0.0f);
 	left->SetMaterial(red);
 
-	Material* green = new Material();
+	auto green = make_shared<Material>();
 	green->Color = vec3(0.0f, 1.0f, 0.0f);
 	right->SetMaterial(green);
 
-	Material* blue = new Material();
+	auto blue = make_shared<Material>();
 	blue->Color = vec3(0.0f, 0.0f, 1.0f);
 	blue->Specular = 0.2f;
+	blue->Reflectance = 0.5f;
 	sphere->SetMaterial(blue);
 
-	Material* lightMaterial = new Material();
+	auto glass = make_shared<Material>();
+	// glass->Specular = 0.2f;
+	glass->Transparency = 1.0f;
+	glass->RefractiveIndex = 1.2f;
+	glassSphere->SetMaterial(glass);
+
+	auto lightMaterial = make_shared<Material>();
 	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
 	lightMaterial->Emissive = 1.0f;
 	lightSphere->SetMaterial(lightMaterial);
 
 	scene->Objects.push_back(sphere);
+	scene->Objects.push_back(glassSphere);
 	scene->Objects.push_back(bottom);
 	scene->Objects.push_back(top);
 	scene->Objects.push_back(back);
@@ -169,7 +176,7 @@ Scene* CreateCornellBox()
 	scene->Objects.push_back(right);
 	scene->Objects.push_back(box);
 	//scene->Objects.push_back(plane);
-	scene->Objects.push_back(lightSphere);
+	//scene->Objects.push_back(lightSphere);
 	scene->Lights.push_back(mainLight);
 
 
@@ -194,75 +201,13 @@ int main(int argc, char* args[])
 		return 1;
 	}
 
-	// The surface contained by the window
 	SDL_Surface* screenSurface = nullptr;
 	SDL_Event event;
 	bool quit = false;	
 	float theta = pi<float>() * 0.5f;
-
-	/*
-	Sphere sphere(vec3(0.0f, 0.0f, 1.0f), 1.0f);
-	Sphere sphere2(vec3(1.5f, 0.0f, 0.5f), 0.5f);
-	mat4 transform = mat4(1.0f);
-	//transform = scale(transform, vec3(1.0f, 1.0f, 5.0f));
-	sphere2.SetTransform(transform);
-	Plane plane;
-	Box box(vec3(0.0f, 0.0f, 0.0f), vec3(0.6f, 0.6f, 2.5f));
-	transform = mat4(1.0f);
-	transform = rotate(transform, radians(45.0f), vec3(1.0f, 0.0f, 0.0f));
-	transform = translate(transform, vec3(1.0f, 0.0f, 0.0f));
-	//transform = scale(transform, vec3(2.0f, 2.0f, 2.0f));
-	box.SetTransform(transform);
-
-	Light mainLight;
-	mainLight.Color = vec3(1.0f, 1.0f, 1.0f);
-	mainLight.Intensity = 0.9f;
-	mainLight.Position = vec3(5.0f, 10.f, 10.0f);
-	mainLight.Type = LightType::Point;
-
-	Light fillLight;
-	fillLight.Color = vec3(1.0f, 1.0f, 1.0f);
-	fillLight.Intensity = 0.2f;
-	fillLight.Position = vec3(-10.0f, 10.f, 15.0f);
-	fillLight.Type = LightType::Point;
-
-	Light fillLight2;
-	fillLight2.Color = vec3(1.0f, 1.0f, 1.0f);
-	fillLight2.Intensity = 0.3f;
-	fillLight2.Position = vec3(10.0f, -10.f, 15.0f);
-	fillLight2.Type = LightType::Point;
-
-	Material blue;
-	blue.Color = vec3(0.0f, 0.0f, 1.0f);
-	box.SetMaterial(&blue);
-
-	Material red;
-	red.Color = vec3(1.0f, 0.0f, 0.0f);
-	red.Specular = 0.7f;
-	red.SpecularPower = 32.0f;
-	sphere.SetMaterial(&red);
-
-	Material green;
-	green.Color = vec3(0.0f, 1.0f, 0.0f);
-	sphere2.SetMaterial(&green);
-
-	Material checker;
-	checker.Texture = new Checkerboard();
-	plane.SetMaterial(&checker);
-
-	Renderer renderer;
-	renderer.Scene.push_back(&plane);
-	renderer.Scene.push_back(&sphere);
-	renderer.Scene.push_back(&sphere2);
-	renderer.Scene.push_back(&box);
-	renderer.Lights.push_back(&mainLight);
-	renderer.Lights.push_back(&fillLight);
-	renderer.Lights.push_back(&fillLight2);
-	*/
-
 	Renderer renderer;
 
-	renderer.Scene = CreateCornellBox();
+	renderer.Scene = shared_ptr<Scene>(CreateCornellBox());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
 	float r = 2.8f;
 	renderer.Scene->Camera = make_shared<Camera>(
