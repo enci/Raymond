@@ -10,9 +10,8 @@ class Ray;
 class Traceable;
 class Camera;
 
-class Scene
+struct Scene
 {
-public:
 	std::vector<std::shared_ptr<Traceable>>		Objects;
 	std::vector< std::shared_ptr<Light>>		Lights;
 	std::shared_ptr<Camera>						Camera;

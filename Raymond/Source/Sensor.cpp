@@ -6,12 +6,31 @@ using namespace Raymond;
 Sensor::Sensor(int width, int height)
 	: Width(width)
 	, Height(height)
-	, Pixels(new Color32[width * height * sizeof(Color32)])
-{}
+	, Pixels(new Color32[width * height])
+{
+	for (int i = 0; i < width * height; ++i)
+	{
+		Color32& c = Pixels[i];
+		c.r = 255;
+		c.g = 0;
+		c.b = 255;
+		c.a = 255;
+	}
+}
 
 Sensor::~Sensor()
 {
 	delete[] Pixels;
+}
+
+void Sensor::Clear() const
+{
+	Color32 c;
+	c.r = 128;
+	c.g = 0;
+	c.b = 128;
+	c.a = 128;
+	memset(Pixels, c.Int, Width * Height * sizeof(Color32));
 }
 
 Color32& Sensor::GetPixel(int x, int y)

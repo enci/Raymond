@@ -24,7 +24,7 @@ bool Sphere::Trace(const Ray& r, IntersectInfo& info) const
 		}
 
 		t = (-b + sqrt(discriminant)) / (2.0f * a);
-		if (t > 0)
+		if (t > 0.0f)
 		{
 			info.Distance = t;
 			info.Position = r.PointAtParameter(t);
@@ -51,7 +51,7 @@ bool Sphere::Test(const Ray& r, float tmax) const
 			return true;
 
 		t = (-b + sqrt(discriminant)) / (2.0f * a);
-		if (t > 0 && t < tmax)
+		if (t > 0.0f && t < tmax)
 			return true;
 	}
 

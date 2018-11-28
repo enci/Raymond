@@ -11,7 +11,7 @@ struct Material;
 
 struct IntersectInfo
 {
-	float Distance;
+	float Distance	= -1.0f;
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	std::weak_ptr<Traceable> Object;
@@ -20,11 +20,8 @@ struct IntersectInfo
 class Traceable
 {
 public:
-	Traceable()
-		: _transform(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
-	{ _inverse = _transform; }
+	Traceable() : _transform(1) { _inverse = _transform; }
 	virtual ~Traceable() = default;
-	bool TraceWorld(const Ray& r, IntersectInfo& info);
 	virtual bool Trace(const Ray& r, IntersectInfo& info) const = 0;
 	virtual bool Test(const Ray& r, float tmax) const = 0;
 	void SetTransform(const glm::mat4& transform)
@@ -36,6 +33,7 @@ public:
 protected:
 	glm::mat4 _transform;
 	glm::mat4 _inverse;
+	//std::shared_ptr<Material> _material = nullptr;
 	const Material* _material = nullptr;
 };
 

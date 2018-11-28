@@ -11,16 +11,12 @@
 #include "Source/Material.h"
 #include "Source/Scene.h"
 #include "Source/Light.h"
+#include "Source/Sensor.h"
+#include "Source/Defines.h"
 
 using namespace std;
 using namespace glm;
 using namespace Raymond;
-
-/// Returns a random float between zero and 1
-inline float RandFloat() { return static_cast<float>((rand()) / (RAND_MAX + 1.0)); }
-
-/// Returns a random float between x and y
-inline float RandInRange(float x, float y) { return x + RandFloat()*(y - x); }
 
 class Checkerboard : public SolidTexture
 {
@@ -29,11 +25,11 @@ public:
 	vec3 GetColor(const vec3& position) const override;
 };
 
-void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
+void Putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 {
 	int bpp = surface->format->BytesPerPixel;
-	/* Here p is the address to the pixel we want to set */
-	Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+	// Here p is the address to the pixel we want to set
+	Uint8 *p = (Uint8*)surface->pixels + y * surface->pitch + x * bpp;
 
 	switch (bpp) {
 	case 1:
@@ -63,14 +59,37 @@ void putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 	}
 }
 
-int kWidth = 640;
-int kHeight = 480;
+SDL_Surface* CreateSurface(Sensor* sensor)
+{
+	auto surface = SDL_CreateRGBSurfaceWithFormatFrom(
+		sensor->Pixels,
+		sensor->Width,
+		sensor->Height,
+		32,
+		sensor->Width * 4,
+		SDL_PIXELFORMAT_RGBA32);
+	ASSERT(surface);
+	return surface;
+}
+
+void UpdateSurface(SDL_Surface* surface, Sensor* sensor)
+{
+	ASSERT(surface->w == sensor->Width);
+	ASSERT(surface->h == sensor->Height);
+
+	for (int x = 0; x < sensor->Width; ++x)
+		for (int y = 0; y < sensor->Height; ++y)
+			Putpixel(surface, x, y, sensor->GetPixel(x, y).Int);
+}
+
+int kWidth = 300;
+int kHeight = 300;
 
 Scene* CreateCornellBox()
 {
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
-	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.25f), 0.25f);
+	auto sphere = make_shared<Sphere>(vec3(-0.5f, 0.2f, 0.25f), 0.25f);
 	vec3 zero(0.0f, 0.0f, 0.0f);
 
 	vec3 bottomPos(0.0f, 0.0f, -0.2f);
@@ -78,6 +97,8 @@ Scene* CreateCornellBox()
 	transform = mat4(1.0f);
 	transform = translate(transform, bottomPos);
 	bottom->SetTransform(transform);
+
+	auto plane = make_shared<Plane>();
 
 	vec3 topPos(0.0f, 0.0f, 2.2f);
 	auto top = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(1.0f, 1.0f, 0.2f));
@@ -103,14 +124,24 @@ Scene* CreateCornellBox()
 	transform = translate(transform, rightPos);
 	right->SetTransform(transform);
 
-	vec3 lightPos(0.0f, 0.0f, 1.2f);
+	vec3 boxPos(0.25f, -0.3f, 0.6f);
+	auto box = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.6f));
+	//auto box = make_shared<Sphere>(vec3(0.25f, 0.25f, 1.0f), 0.20f);
+	transform = mat4(1.0f);
+	//transform = rotate(transform, 0.2f, vec3(1.0f, 0.0f, 0.0f));
+	transform = rotate(transform, 0.35f, vec3(0.0f, 0.0f, 1.0f));
+	transform = translate(transform, boxPos);
+	box->SetTransform(transform);
+
+
+	vec3 lightPos(0.0f, 0.0f, 1.8f);
 	auto mainLight = make_shared<Light>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
-	mainLight->Intensity = 5.0f;
+	mainLight->Intensity = 0.5f;
 	mainLight->Position = lightPos;
 	mainLight->Type = LightType::Point;
 
-	Sphere* lightSphere = new Sphere(lightPos, 0.05f);
+	auto lightSphere = make_shared<Sphere>(lightPos, 0.05f);
 	
 	Material* red = new Material();
 	red->Color = vec3(1.0f, 0.0f, 0.0f);
@@ -120,16 +151,15 @@ Scene* CreateCornellBox()
 	green->Color = vec3(0.0f, 1.0f, 0.0f);
 	right->SetMaterial(green);
 
+	Material* blue = new Material();
+	blue->Color = vec3(0.0f, 0.0f, 1.0f);
+	blue->Specular = 0.2f;
+	sphere->SetMaterial(blue);
+
 	Material* lightMaterial = new Material();
 	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
 	lightMaterial->Emissive = 1.0f;
 	lightSphere->SetMaterial(lightMaterial);
-
-	//Material checker;
-	//checker.Texture = new Checkerboard();
-	//plane.SetMaterial(&checker);	
-	//renderer.Scene.push_back(&plane);	
-	//renderer.Scene.push_back(&sphere2);
 
 	scene->Objects.push_back(sphere);
 	scene->Objects.push_back(bottom);
@@ -137,12 +167,13 @@ Scene* CreateCornellBox()
 	scene->Objects.push_back(back);
 	scene->Objects.push_back(left);
 	scene->Objects.push_back(right);
-	//renderer.Scene.push_back(lightSphere);
-	//renderer.Lights.push_back(fillLight2);
+	scene->Objects.push_back(box);
+	//scene->Objects.push_back(plane);
+	scene->Objects.push_back(lightSphere);
 	scene->Lights.push_back(mainLight);
 
+
 	return scene;
-	
 }
 
 int main(int argc, char* args[])
@@ -165,7 +196,6 @@ int main(int argc, char* args[])
 
 	// The surface contained by the window
 	SDL_Surface* screenSurface = nullptr;
-
 	SDL_Event event;
 	bool quit = false;	
 	float theta = pi<float>() * 0.5f;
@@ -233,8 +263,17 @@ int main(int argc, char* args[])
 	Renderer renderer;
 
 	renderer.Scene = CreateCornellBox();
-	float r = 5.0f;
+	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
+	float r = 2.8f;
+	renderer.Scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+	renderer.Render();
 
+	screenSurface = SDL_GetWindowSurface(win);
 	while (!quit)
 	{
 		while (SDL_PollEvent(&event))
@@ -244,42 +283,9 @@ int main(int argc, char* args[])
 				quit = true;
 			}
 		}		
-
-		theta += 0.05f;
-		renderer.Scene->Camera = make_shared<Camera>(
-			vec3(r * cos(theta), r * sin(theta), 1.0f),
-			vec3(0.0f, 0.0f, 1.0f),
-			vec3(0.0f, 0.0f, 1.0f),
-			60.0f,
-			float(kWidth) / float(kHeight));
-
-		const int samples = 8;
-
-		// Rendering
-		screenSurface = SDL_GetWindowSurface(win);
-		SDL_LockSurface(screenSurface);
-		for (int x = 0; x < screenSurface->w; ++x)
-		{
-			for (int y = 0; y < screenSurface->h; ++y)
-			{
-				vec3 fcolor(0.0f, 0.0f, 0.0f);
-				for (int s = 0; s < samples; s++)
-				{
-					float u = float(x + RandInRange(-0.5f, 0.5f)) / float(kWidth);
-					float v = float(y + RandInRange(-0.5f, 0.5f)) / float(kHeight);
-
-					Ray ray = renderer.Scene->Camera->GetRay(u, v);
-					IntersectInfo info;
-					fcolor += renderer.Trace(ray, info);
-				}
-				fcolor /= samples;
-				const float exp = 1.0f / 2.2f;
-				fcolor = pow(fcolor, vec3(exp, exp, exp));
-				Color32 color = Color32(fcolor);
-				
-				putpixel(screenSurface, x, y, color.Int);
-			}
-		}
+		
+		SDL_LockSurface(screenSurface);	
+		UpdateSurface(screenSurface, renderer.Sensor.get());
 		SDL_UnlockSurface(screenSurface);
 		SDL_UpdateWindowSurface(win);
 	}

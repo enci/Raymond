@@ -1,8 +1,6 @@
 #pragma once
 
-#include <cmath>
 #include <cstdlib>
-#include <algorithm>
 
 // Define the ASSERT and DEBUG macros
 #if defined(_WIN32)
@@ -22,7 +20,7 @@
 #ifdef DEBUG
 #define LOGGING 1
 #else
-#define LOGGING 1
+#define LOGGING 0
 #endif
 
 namespace Raymond
