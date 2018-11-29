@@ -26,10 +26,10 @@ public:
 	Renderer() = default; // TODO: Set init params in here
 
 	virtual ~Renderer();
-
-	virtual glm::vec3 Trace(const Ray& ray);
-	
+		
 	void Render();
+
+	float GetProgress();
 
 	std::shared_ptr<Scene> Scene;
 
@@ -37,9 +37,16 @@ public:
 
 	bool IsDone = false;
 
+	int MaxBounces = 8;
+
+	int Samples = 64;
+
 private:
+	virtual glm::vec3 Trace(const Ray& ray, int bounce);
 	glm::vec3 Shade(const Light& light, const IntersectInfo& info) const;
-	std::vector<std::unique_ptr<std::thread>> _workers;
+	std::vector<std::unique_ptr<std::thread>>	_threads;
+	std::vector<int>							_progress;
+	int											_numberOfThreads	= 4;
 };
 
 }

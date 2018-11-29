@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "SDL.h"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
@@ -62,7 +63,7 @@ void Putpixel(SDL_Surface *surface, int x, int y, Uint32 pixel)
 SDL_Surface* CreateSurface(Sensor* sensor)
 {
 	auto surface = SDL_CreateRGBSurfaceWithFormatFrom(
-		sensor->Pixels,
+		sensor->Samples,
 		sensor->Width,
 		sensor->Height,
 		32,
@@ -84,6 +85,19 @@ void UpdateSurface(SDL_Surface* surface, Sensor* sensor)
 
 int kWidth = 600;
 int kHeight = 600;
+
+string MakeProgressBar(const float progress)
+{
+	int l = 50;
+	string bar;
+	bar.resize(l + 2);
+	int p = int(floor(progress * l));
+	bar[0] = '|';
+	for (int i = 1; i < l + 1; i++)
+		bar[i] = i <= p ? '|' : ' ';
+	bar[l+1] = '|';
+	return bar +  " " + to_string(int(progress * 100)) + "%";
+}
 
 Scene* CreateCornellBox()
 {
@@ -155,15 +169,16 @@ Scene* CreateCornellBox()
 	blue->Specular = 0.2f;
 	blue->Reflectance = 0.5f;
 	sphere->SetMaterial(blue);
+	box->SetMaterial(blue);
 
 	auto glass = make_shared<Material>();
 	// glass->Specular = 0.2f;
 	glass->Transparency = 1.0f;
-	glass->RefractiveIndex = 1.2f;
+	glass->RefractiveIndex = 1.52f;
 	glassSphere->SetMaterial(glass);
 
 	auto lightMaterial = make_shared<Material>();
-	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	lightMaterial->Color = vec3(1.0f, 0.0f, 0.0f);
 	lightMaterial->Emissive = 1.0f;
 	lightSphere->SetMaterial(lightMaterial);
 
@@ -216,6 +231,7 @@ int main(int argc, char* args[])
 		vec3(0.0f, 0.0f, 1.0f),
 		60.0f,
 		float(kWidth) / float(kHeight));
+	renderer.Samples = 36;
 	renderer.Render();
 
 	screenSurface = SDL_GetWindowSurface(win);
@@ -233,6 +249,10 @@ int main(int argc, char* args[])
 		UpdateSurface(screenSurface, renderer.Sensor.get());
 		SDL_UnlockSurface(screenSurface);
 		SDL_UpdateWindowSurface(win);
+
+		const auto progress = renderer.GetProgress();
+		string name = "Raymond - " + MakeProgressBar(progress);
+		SDL_SetWindowTitle(win, name.c_str());
 	}
 			
 	return 0;
