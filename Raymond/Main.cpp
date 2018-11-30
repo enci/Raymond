@@ -138,23 +138,24 @@ Scene* CreateCornellBox()
 	transform = translate(transform, rightPos);
 	right->SetTransform(transform);
 
-	vec3 boxPos(0.25f, -0.3f, 0.6f);
+	vec3 boxPos(0.2f, -0.3f, 0.6f);
 	auto box = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(0.25f, 0.25f, 0.6f));
 	transform = mat4(1.0f);
 	transform = rotate(transform, 0.35f, vec3(0.0f, 0.0f, 1.0f));
 	transform = translate(transform, boxPos);
 	box->SetTransform(transform);
 
-	auto glassSphere = make_shared<Sphere>(vec3(0.3f, 0.4f, 0.25f), 0.25f);
+	auto glassSphere = make_shared<Sphere>(vec3(0.3f, 0.5f, 0.25f), 0.25f);
 
+
+	const float lightRad = 0.18f;
 	vec3 lightPos(0.0f, 0.0f, 1.8f);
-	auto mainLight = make_shared<Light>();
+	auto mainLight = make_shared<PointLight>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
-	mainLight->Intensity = 0.5f;
+	mainLight->Intensity = 20.5f;
 	mainLight->Position = lightPos;
-	mainLight->Type = LightType::Point;
-
-	auto lightSphere = make_shared<Sphere>(lightPos, 0.05f);
+	mainLight->Radius = lightRad;
+	auto lightSphere = make_shared<Sphere>(lightPos, lightRad);
 	
 	auto red = make_shared<Material>();
 	red->Color = vec3(1.0f, 0.0f, 0.0f);
@@ -173,12 +174,13 @@ Scene* CreateCornellBox()
 
 	auto glass = make_shared<Material>();
 	// glass->Specular = 0.2f;
-	glass->Transparency = 1.0f;
+	glass->Transparency = 0.8f;
+	glass->Color = vec3(0.8f, 0.8f, 1.0f);
 	glass->RefractiveIndex = 1.52f;
 	glassSphere->SetMaterial(glass);
 
 	auto lightMaterial = make_shared<Material>();
-	lightMaterial->Color = vec3(1.0f, 0.0f, 0.0f);
+	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
 	lightMaterial->Emissive = 1.0f;
 	lightSphere->SetMaterial(lightMaterial);
 
@@ -191,7 +193,7 @@ Scene* CreateCornellBox()
 	scene->Objects.push_back(right);
 	scene->Objects.push_back(box);
 	//scene->Objects.push_back(plane);
-	//scene->Objects.push_back(lightSphere);
+	scene->Objects.push_back(lightSphere);
 	scene->Lights.push_back(mainLight);
 
 
@@ -231,7 +233,7 @@ int main(int argc, char* args[])
 		vec3(0.0f, 0.0f, 1.0f),
 		60.0f,
 		float(kWidth) / float(kHeight));
-	renderer.Samples = 36;
+	renderer.Samples = 128;
 	renderer.Render();
 
 	screenSurface = SDL_GetWindowSurface(win);
@@ -242,6 +244,7 @@ int main(int argc, char* args[])
 			if (event.type == SDL_QUIT)
 			{
 				quit = true;
+				renderer.Stop();
 			}
 		}		
 		

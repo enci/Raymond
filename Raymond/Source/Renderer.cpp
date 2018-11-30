@@ -12,27 +12,23 @@
 using namespace Raymond;
 using namespace glm;
 
-vec3 Renderer::Shade(const Light& light, const IntersectInfo& info) const
+vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) const
 {
 	const Material& material = info.Object.lock()->GetMaterial();
 	
-	vec3 color = material.Texture ?
+	const vec3 color = material.Texture ?
 		material.Texture->GetColor(info.Position) :
 		material.Color;
 
 	vec3 output = color * material.Emissive;
-	vec3 d = light.Position - info.Position;
-	float r = length(d);
-	d = normalize(d);
-	float intensity = light.Intensity / (r*r);
-	output += color * intensity * light.Color * clamp(dot(d, info.Normal), 0.0f, 1.0f);
+	vec3 d = lightInfo.Ray.Direction;	
+	output += color * lightInfo.Color * clamp(dot(d, info.Normal), 0.0f, 1.0f);
 
 	vec3 toEye = Scene->Camera->Origin() - info.Position;
 	toEye = normalize(toEye);
 	vec3 h = toEye + d;
 	h = normalize(h);
-	output += material.Specular * light.Color * intensity *
-		pow(dot(h, info.Normal), material.SpecularPower);
+	output += material.Specular * lightInfo.Color * pow(dot(h, info.Normal), material.SpecularPower);
 
 	return output; 
 }
@@ -59,6 +55,9 @@ void Renderer::Render()
 					Ray ray = Scene->Camera->GetRay(u, v);
 					auto color = Trace(ray, 0);
 					this->Sensor->AddSample(x, y, color);
+
+					if (_stop)
+						return;
 				}
 			}
 			_progress[taskID]++;
@@ -68,7 +67,7 @@ void Renderer::Render()
 	for (int id = 0; id < _numberOfThreads; id++)
 	{
 		_threads.push_back(std::make_unique<std::thread>(task, id));
-		_progress.push_back(0.0f);
+		_progress.push_back(0);
 	}
 }
 
@@ -93,8 +92,8 @@ Renderer::~Renderer()
 vec3 Renderer::Trace(const Ray& ray, int bounce)
 {
 	vec3 color(0.0f, 0.0f, 0.0f);
-	IntersectInfo info;
 
+	IntersectInfo info;
 	const auto& objects = Scene->Objects;
 
 	float nearest = FLT_MAX;
@@ -116,8 +115,8 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 
 	if(nearest != FLT_MAX)
 	{
-		auto object = info.Object.lock();
-		auto material = object->GetMaterial();
+		const auto object = info.Object.lock();
+		auto& material = object->GetMaterial();
 
 		// Hande transparent materials
 		if(material.Transparency > 0.0f && bounce < MaxBounces)
@@ -155,53 +154,46 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 
 			Ray refractedRay(origin, refracted);
 			refractedRay.Origin += refractedRay.Direction * 0.001f;
-			vec3 refractedColor = Trace(refractedRay, bounce);
+			const vec3 refractedColor = Trace(refractedRay, bounce);
 
 			reflectedColor *= fresnel;
-			color += reflectedColor + refractedColor;
+			color += reflectedColor + refractedColor * material.Transparency * material.Color;
 		}
 
 		// Handle reflective materials
 		if(material.Reflectance > 0.0f && bounce < MaxBounces)
 		{
-			auto reflected = reflect(ray.Direction, info.Normal);
-			auto origin = info.Position;
-			Ray reflectedRay(origin, reflected);
+			const auto reflected = reflect(ray.Direction, info.Normal);
+			const auto origin = info.Position;
+			const Ray reflectedRay(origin, reflected);
 			color += Trace(reflectedRay, bounce + 1) * material.Reflectance;
 		}		
 
 		// Collect all lights
 		for (const auto& l : lights)
 		{
-			vec3 direction = l->Position - info.Position;
-			float tmax = length(direction);
-			direction /= tmax;
-			vec3 position = info.Position; // + direction * 0.001f;
-			Ray shadowRay(position, direction);
+			auto lightInfo = l->GetLightInfo(info.Position);			
+			const Ray& shadowRay = lightInfo.Ray; // (position, direction);
 
-			bool lit = true;
+			vec3 shade(1.0f, 1.0f, 1.0f);
 			
 			for (const auto& t : objects)
 			{
 				if(info.Object.lock().get() == t.get())
 					continue;
 				
-				// if (t->GetMaterial() && t->GetMaterial().get()->Emissive >= 1.0f)
-				//	continue;
-
-				IntersectInfo tInfo;
-
-				if(t->Test(shadowRay, tmax))
-				{
-					lit = false;
-					break;
+				if (t->GetMaterial().Emissive > 0.0f)
+					continue;
+				
+				IntersectInfo shadowInfo;
+				if (t->Trace(shadowRay, shadowInfo) && shadowInfo.Distance < lightInfo.Distance)
+				{				
+					const auto& mat = t.get()->GetMaterial();
+					shade *=  mat.Transparency * mat.Color;
 				}
 			}
-
-			if(lit)
-			{
-				color += Shade(*l, info);
-			}
+			
+			color += Shade(lightInfo, info) * shade;
 		}
 	}
 	
