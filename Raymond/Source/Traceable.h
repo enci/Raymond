@@ -29,9 +29,7 @@ public:
 	/// Trace intersection with a ray and fills the intersection
 	/// @return true if intersection was found
 	virtual bool Trace(const Ray& r, IntersectInfo& info) const = 0;
-
-	virtual bool Test(const Ray& r, float tmax) const = 0;
-
+	
 	/// Set the world transform matrix (no scaling supported at current)
 	void SetTransform(const glm::mat4& transform);
 

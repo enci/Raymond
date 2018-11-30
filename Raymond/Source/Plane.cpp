@@ -35,16 +35,3 @@ bool Plane::Trace(const Ray& r, IntersectInfo& info) const
 	
 	return true;
 }
-
-bool Plane::Test(const Ray& r, float tmax) const
-{
-	float d = dot(_normal, r.Direction);
-
-	if (d == 0.0f)
-		return false;
-
-	// Normal and ray perpendicular, early out 
-	float t = (-_offset - dot(_normal, r.Origin)) / d;
-	
-	return t > 0.0f && t > tmax;
-}

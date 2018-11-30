@@ -233,7 +233,7 @@ int main(int argc, char* args[])
 		vec3(0.0f, 0.0f, 1.0f),
 		60.0f,
 		float(kWidth) / float(kHeight));
-	renderer.Samples = 128;
+	renderer.Samples = 400;
 	renderer.Render();
 
 	screenSurface = SDL_GetWindowSurface(win);

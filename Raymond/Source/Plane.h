@@ -10,7 +10,6 @@ public:
 	Plane(const glm::vec3& n, float o);
 	Plane();
 	bool Trace(const Ray& r, IntersectInfo& info) const override;
-	bool Test(const Ray& r, float tmax) const override;
 
 private:
 	glm::vec3 _normal;

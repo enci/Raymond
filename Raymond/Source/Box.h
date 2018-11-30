@@ -10,7 +10,6 @@ class Box : public Traceable
 public:
 	Box(const glm::vec3& position, const glm::vec3& extent);
 	bool Trace(const Ray& r, IntersectInfo& info) const override;
-	bool Test(const Ray& r, float tmax) const override;
 
 private:
 	glm::vec3 _position;
