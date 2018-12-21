@@ -8,6 +8,7 @@
 #include "Material.h"
 #include "Sensor.h"
 #include "Defines.h"
+#include "Utils.h"
 
 using namespace Raymond;
 using namespace glm;
@@ -44,7 +45,7 @@ void Renderer::Render()
 		{
 			for (int y = 0; y < h; ++y)
 			{
-				if(y % _numberOfThreads != taskID)
+				if(y % NumberOfThreads != taskID)
 					continue;
 
 				for (int x = 0; x < w; ++x)
@@ -64,7 +65,7 @@ void Renderer::Render()
 		}
 	};
 		
-	for (int id = 0; id < _numberOfThreads; id++)
+	for (int id = 0; id < NumberOfThreads; id++)
 	{
 		_threads.push_back(std::make_unique<std::thread>(task, id));
 		_progress.push_back(0);
@@ -118,7 +119,7 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 		const auto object = info.Object.lock();
 		auto& material = object->GetMaterial();
 
-		// Hande transparent materials
+		// Handle transparent materials
 		if(material.Transparency > 0.0f && bounce < MaxBounces)
 		{
 			// Check if it's back facing
@@ -145,7 +146,7 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 
 				if (refracted != vec3(0, 0, 0))
 					fresnel = (1.0f - dn);
-				else; // Total internal reflection. Not yet implmented				
+				else; // Total internal reflection. Not yet implemented				
 			}
 
 			Ray reflectedRay(origin, reflected);
@@ -173,7 +174,7 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 		for (const auto& l : lights)
 		{
 			auto lightInfo = l->GetLightInfo(info.Position);			
-			const Ray& shadowRay = lightInfo.Ray; // (position, direction);
+			const Ray& shadowRay = lightInfo.Ray;
 
 			vec3 shade(1.0f, 1.0f, 1.0f);
 			
@@ -195,6 +196,35 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 			
 			color += Shade(lightInfo, info) * shade;
 		}
+
+		static float aoLength = 0.3f;
+		float aoCount = 0.0f;
+		if (material.Emissive <= 0.0f)
+		{
+			for (int i = 0; i < AOSamples; i++)
+			{
+				Ray aoRay(info.Position, RandomOnUnitHemisphere(info.Normal));
+				aoRay.Origin += aoRay.Direction * 0.001f;
+
+				for (const auto& t : objects)
+				{
+					if (t->GetMaterial().Emissive > 0.0f)
+						continue;
+
+					IntersectInfo aoInfo;
+					if (t->Trace(aoRay, aoInfo) && aoInfo.Distance < aoLength)
+					{
+						const auto& mat = t.get()->GetMaterial();
+						aoCount += 1.0f - mat.Transparency;
+
+						if (aoCount >= 1.0f)
+							break;
+					}
+				}
+			}
+			aoCount /= AOSamples;
+		}
+		color *= vec3(1.0f - aoCount);
 	}
 	
 	return color;

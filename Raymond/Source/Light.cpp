@@ -1,21 +1,9 @@
 #include "Light.h"
-#include "Defines.h"
+#include "Utils.h"
+
 
 using namespace glm;
 using namespace Raymond;
-
-vec3 RandomOnUnitSphere()
-{
-	vec3 v;
-	do
-	{
-		v = vec3(	RandInRange(-1.0f, 1.0f),
-					RandInRange(-1.0f, 1.0f),
-					RandInRange(-1.0f, 1.0f));
-	}
-	while (length(v) > 1.0f);
-	return normalize(v);
-}
 
 LightInfo PointLight::GetLightInfo(const glm::vec3& position)
 {
@@ -32,5 +20,16 @@ LightInfo PointLight::GetLightInfo(const glm::vec3& position)
 	const float intensity = Intensity / (frac * frac);
 
 	info.Color = this->Color * intensity;
+	return info;
+}
+
+LightInfo DirecionalLight::GetLightInfo(const glm::vec3& position)
+{
+	LightInfo info;
+	vec3 direction = -normalize(Direction);
+	direction += RandomOnUnitSphere() * Radius;
+	info.Distance = FLT_MAX;
+	info.Ray = Ray(position, direction);
+	info.Color = this->Color * Intensity;
 	return info;
 }

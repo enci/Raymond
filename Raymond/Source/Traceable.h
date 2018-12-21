@@ -17,6 +17,7 @@ struct IntersectInfo
 	std::weak_ptr<Traceable> Object;
 };
 
+/// 
 class Traceable
 {
 public:

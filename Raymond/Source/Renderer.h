@@ -41,14 +41,17 @@ public:
 
 	int MaxBounces = 8;
 
-	int Samples = 64;
+	int Samples = 16;
+
+	int AOSamples = 2;
+
+	int	NumberOfThreads = 4;
 
 private:
 	virtual glm::vec3 Trace(const Ray& ray, int bounce);
 	glm::vec3 Shade(const LightInfo& lightInfo, const IntersectInfo& info) const;
 	std::vector<std::unique_ptr<std::thread>>	_threads;
-	std::vector<int>							_progress;
-	int											_numberOfThreads	= 4;
+	std::vector<int>							_progress;	
 	bool										_stop = false;
 };
 

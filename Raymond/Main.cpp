@@ -14,10 +14,61 @@
 #include "Source/Light.h"
 #include "Source/Sensor.h"
 #include "Source/Defines.h"
+#include "Source/Cone.h"
 
 using namespace std;
 using namespace glm;
 using namespace Raymond;
+
+
+bool IsValidHsv(double h, double s, double v)
+{
+	return
+		h >= 0.0 && h <= 360.0 &&
+		s >= 0.0 && s <= 1.0 &&
+		v >= 0.0 && v <= 1.0;
+}
+
+vec3 CreateFromHsv(double h, double s, double v)
+{
+	double c = 0.0, m = 0.0, x = 0.0;
+	vec3 color(0.0f);
+	if (IsValidHsv(h, s, v))
+	{
+		c = v * s;
+		x = c * (1.0 - fabs(fmod(h / 60.0, 2) - 1.0));
+		m = v - c;
+		if (h >= 0.0 && h < 60.0)
+		{
+			color = vec3(c + m, x + m, m);
+		}
+		else if (h >= 60.0 && h < 120.0)
+		{
+			color = vec3(x + m, c + m, m);
+		}
+		else if (h >= 120.0 && h < 180.0)
+		{
+			color = vec3(m, c + m, x + m);
+		}
+		else if (h >= 180.0 && h < 240.0)
+		{
+			color = vec3(m, x + m, c + m);
+		}
+		else if (h >= 240.0 && h < 300.0)
+		{
+			color = vec3(x + m, m, c + m);
+		}
+		else if (h >= 300.0 && h < 360.0)
+		{
+			color = vec3(c + m, m, x + m);
+		}
+		else
+		{
+			color = vec3(m, m, m);
+		}
+	}
+	return color;
+}
 
 class Checkerboard : public SolidTexture
 {
@@ -99,6 +150,88 @@ string MakeProgressBar(const float progress)
 	return bar +  " " + to_string(int(progress * 100)) + "%";
 }
 
+
+
+Scene* CreateBoxes()
+{
+	kWidth = 640;
+	kHeight = 480;
+
+	srand(time(nullptr));
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+
+	auto plane = make_shared<Plane>();	
+
+	const float lightRad = 0.18f;
+	auto mainLight = make_shared<DirecionalLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 1.6f;
+	mainLight->Direction = normalize(vec3(-1.0f, -1.0f, -1.0f));
+	mainLight->Radius = 0.3f;
+
+	float boxesPerAngle = 28;
+	float r = 1.2f;
+	float dr = 0.6f;
+	for (int ring = 0; ring < 10; ring++)
+	{		
+		float t = 0.0f;
+		int n = int(boxesPerAngle * r);
+		float dt = pi<float>() * 2.0f / float(n);		
+		for (int i = 0; i < n; i++)
+		{
+			float sx = RandInRange(0.05f, 0.20f);
+			float sy = RandInRange(0.05f, 0.20f);
+			float sz = RandInRange(0.35f, 0.60f);
+			auto box = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(sx, sx, sz));
+			float x = r * cos(t) + RandInRange(-0.1f, 0.1f);
+			float y = r * sin(t) + RandInRange(-0.1f, 0.1f);
+			vec3 pos(x, y, 0.0f);
+			transform = mat4(1.0f);
+			transform = translate(transform, pos);
+			transform = rotate(transform, RandInRange(radians(90.0f), radians(90.0f)), vec3(0.0f, 0.0f, 1.0f));
+			transform = rotate(transform, RandInRange(radians(-25.0f), radians(25.0f)), vec3(1.0f, 0.0f, 0.0f));
+			transform = rotate(transform, RandInRange(radians(-25.0f), radians(25.0f)), vec3(0.0f, 1.0f, 0.0f));
+			box->SetTransform(transform);
+			scene->Objects.push_back(box);
+
+			auto mat = make_shared<Material>();
+			/*mat->Color = vec3(
+				RandInRange(0.4f, 1.0f),
+				RandInRange(0.4f, 1.0f),
+				RandInRange(0.4f, 1.0f));
+			*/
+			mat->Color = CreateFromHsv(
+				RandInRange(0.0, 360),
+				RandInRange(0.6, 0.8f),
+				RandInRange(0.8, 1.0f));
+			box->SetMaterial(mat);
+
+			t += dt;
+		}
+		r += dr;
+	}
+
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.15f), 0.15f);
+	auto mirror = make_shared<Material>();
+	mirror->Color = vec3(0.8f, 0.8f, 1.0f);
+	mirror->Reflectance = 1.0f;
+	sphere->SetMaterial(mirror);
+		
+	scene->Objects.push_back(plane);
+	scene->Objects.push_back(sphere);
+	scene->Lights.push_back(mainLight);
+
+	scene->Camera = make_shared<Camera>(
+		vec3(0.0f, 2.5f, 1.45f),
+		vec3(0.0f, 0.0f, 0.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
 Scene* CreateCornellBox()
 {
 	Scene* scene = new Scene();
@@ -146,7 +279,6 @@ Scene* CreateCornellBox()
 	box->SetTransform(transform);
 
 	auto glassSphere = make_shared<Sphere>(vec3(0.3f, 0.5f, 0.25f), 0.25f);
-
 
 	const float lightRad = 0.18f;
 	vec3 lightPos(0.0f, 0.0f, 1.8f);
@@ -196,12 +328,130 @@ Scene* CreateCornellBox()
 	scene->Objects.push_back(lightSphere);
 	scene->Lights.push_back(mainLight);
 
+	float r = 2.8f;
+	float theta = pi<float>() * 0.5f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
 
 	return scene;
 }
 
+Scene* CreateCone()
+{
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+
+	float theta = pi<float>() * 0.13f;
+
+	auto cone = make_shared<Cone>(vec3(0.0f, 0.0f, 2.0f), theta);
+
+	auto plane = make_shared<Plane>();
+	
+	const float lightRad = 0.18f;
+	vec3 lightPos(2.0f, 2.0f, 1.8f);
+	auto mainLight = make_shared<PointLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 4.5f;
+	mainLight->Position = lightPos;
+	mainLight->Radius = lightRad;
+	auto lightSphere = make_shared<Sphere>(lightPos, lightRad);
+
+	auto tree = make_shared<Material>();
+	tree->Color = vec3(0.1f, 0.9f, 0.02);
+	cone->SetMaterial(tree);
+
+	auto lightMaterial = make_shared<Material>();
+	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	lightMaterial->Emissive = 1.0f;
+	lightSphere->SetMaterial(lightMaterial);
+
+	scene->Objects.push_back(plane);
+	scene->Objects.push_back(cone);
+	scene->Objects.push_back(lightSphere);
+	scene->Lights.push_back(mainLight);
+
+	/*
+	float s = 0.0f;
+	float t = 0.0f;
+	float u = 0.0f;
+	while(s < theta)
+	{
+		//for(float )
+		while(t < pi<float>()* 2.0f)
+		{
+			while (u > -2.0f)
+			{
+				//vec3 F(u * tan(s) * cos(t), u * tan(s) * sin(t), u);
+				//F.z += 2.1f;
+				vec3 F(u * tan(s) * cos(t), u * tan(s) * sin(t), u);
+				//F.z += 2.1f;
+
+				auto light = make_shared<PointLight>();
+				light->Color = vec3(1.0f, 1.0f, 1.0f);
+				light->Intensity = 10.5f;
+				light->Position = F;
+				light->Radius = 0.1f;
+				auto lightPoint = make_shared<Sphere>(F, 0.1f);
+
+				// scene->Objects.push_back(light);
+				scene->Lights.push_back(light);
+				u -= 2.0f / 10.0f;
+			}
+			t += pi<float>()* 2.0f / 10.f;
+		}
+		s += theta / 5.f;
+	}
+	*/
+
+	float h = 2.1f;
+	float t = 0.0f;
+	float speed = 80.0f;
+	while (h > 0.0f)
+	{
+		//h = -pow(t, 2) + 2.1f;
+		h = -t / tan(theta * 0.5) + 2.1f;
+		vec3 F(t * cos(t * speed), t * sin(t * speed), h);
+
+		auto light = make_shared<PointLight>();
+		light->Color = vec3(1.0f, 0.9f, 0.9f);
+		light->Intensity = 10.5f;
+		light->Position = F;
+		light->Radius = 0.02f;
+		auto lightPoint = make_shared<Sphere>(F, 0.01f);
+		lightPoint->SetMaterial(lightMaterial);
+
+		scene->Objects.push_back(lightPoint);
+		scene->Lights.push_back(light);
+
+		t += 0.01f;
+	}
+
+	float r = 2.8f;
+	theta = pi<float>() * 0.5f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
+
 int main(int argc, char* args[])
 {
+	Renderer renderer;
+	renderer.Scene = shared_ptr<Scene>(CreateCone());
+	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
+	renderer.Samples = 1024;
+	renderer.NumberOfThreads = 1;
+
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
 		std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;
@@ -220,20 +470,8 @@ int main(int argc, char* args[])
 
 	SDL_Surface* screenSurface = nullptr;
 	SDL_Event event;
-	bool quit = false;	
-	float theta = pi<float>() * 0.5f;
-	Renderer renderer;
+	bool quit = false;		
 
-	renderer.Scene = shared_ptr<Scene>(CreateCornellBox());
-	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
-	float r = 2.8f;
-	renderer.Scene->Camera = make_shared<Camera>(
-		vec3(r * cos(theta), r * sin(theta), 1.0f),
-		vec3(0.0f, 0.0f, 1.0f),
-		vec3(0.0f, 0.0f, 1.0f),
-		60.0f,
-		float(kWidth) / float(kHeight));
-	renderer.Samples = 400;
 	renderer.Render();
 
 	screenSurface = SDL_GetWindowSurface(win);
@@ -255,6 +493,7 @@ int main(int argc, char* args[])
 
 		const auto progress = renderer.GetProgress();
 		string name = "Raymond - " + MakeProgressBar(progress);
+		SDL_Delay(1000 / 30);
 		SDL_SetWindowTitle(win, name.c_str());
 	}
 			
