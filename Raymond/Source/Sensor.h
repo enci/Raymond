@@ -13,7 +13,6 @@ struct Sensor
 	void Clear() const;
 	Color32 GetPixel(int x, int y);
 	const Color32& GetPixel(int x, int y) const;
-	//const Color32& SetPixel(int x, int y, const glm::vec3& color);	
 	void AddSample(int x, int y, const glm::vec3& color);
 	int			Width		= -1;
 	int			Height		= -1;
