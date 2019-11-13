@@ -157,7 +157,7 @@ Scene* CreateBoxes()
 	kWidth = 640;
 	kHeight = 480;
 
-	srand(time(nullptr));
+	//srand(time(nullptr));
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
 
@@ -202,9 +202,9 @@ Scene* CreateBoxes()
 				RandInRange(0.4f, 1.0f));
 			*/
 			mat->Color = CreateFromHsv(
-				RandInRange(0.0, 360),
-				RandInRange(0.6, 0.8f),
-				RandInRange(0.8, 1.0f));
+				RandInRange(0.0f, 360.0f),
+				RandInRange(0.6f, 0.8f),
+				RandInRange(0.8f, 1.0f));
 			box->SetMaterial(mat);
 
 			t += dt;
@@ -447,11 +447,11 @@ Scene* CreateCone()
 int main(int argc, char* args[])
 {
 	Renderer renderer;
-	renderer.Scene = shared_ptr<Scene>(CreateCone());
+	renderer.Scene = shared_ptr<Scene>(CreateCornellBox());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
-	renderer.Samples = 1024;
-	renderer.NumberOfThreads = 1;
-
+	renderer.Samples = 64;
+	renderer.NumberOfThreads = 6;
+	
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
 		std::cout << "SDL_Init Error: " << SDL_GetError() << std::endl;

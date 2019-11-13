@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <random>
 
 // Define the ASSERT and DEBUG macros
 #if defined(_WIN32)
@@ -31,15 +32,25 @@ namespace Raymond
 	typedef unsigned char uchar;
 	typedef unsigned long long ullong;
 
-	/// Returns a random float between zero and 1
-	inline float RandFloat() { return static_cast<float>((rand()) / (RAND_MAX + 1.0)); }
+	inline auto RandomlySeededMersenneTwister()
+	{
+		// Magic number 624: The number of unsigned ints the MT uses as state
+		std::vector<unsigned int> random_data(624);
+		std::random_device source;
+		std::generate(begin(random_data), end(random_data), [&]() {return source(); });
+		std::seed_seq seeds(begin(random_data), end(random_data));
+		std::mt19937 seededEngine(seeds);
+		return seededEngine;
+	}
 
-	/// Returns a random float between x and y
-	inline float RandInRange(float x, float y) { return x + RandFloat()*(y - x); }
-
-	/// Returns a random int between from and to
-	inline int RandInRange(int from, int to) { return from + rand() % (to - from); }
-
+	/// Returns a random float between from and to
+	inline float RandInRange(float from, float to)
+	{		
+		static thread_local std::mt19937 generator = RandomlySeededMersenneTwister();
+		std::uniform_real_distribution<float> distribution(from, to);
+		return distribution(generator);
+	}
+	
 	/// Modulo that works with negative number as well
 	template <class T>
 	inline T Modulo(T x, T m) { return (x % m + m) % m; }
