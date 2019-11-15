@@ -17,11 +17,15 @@ vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) cons
 {
 	const Material& material = info.Object.lock()->GetMaterial();
 	
+	// const vec3 color = material.Color; // material.GetColor(info.Position);
+	//vec3 output = color * material.Emissive; // (0.0f, 0.0f, 0.f);
+	
 	const vec3 color = material.Texture ?
 		material.Texture->GetColor(info.Position) :
 		material.Color;
-
 	vec3 output = color * material.Emissive;
+
+	
 	vec3 d = lightInfo.Ray.Direction;	
 	output += color * lightInfo.Color * clamp(dot(d, info.Normal), 0.0f, 1.0f);
 
@@ -118,6 +122,8 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 	{
 		const auto object = info.Object.lock();
 		auto& material = object->GetMaterial();
+		
+		//color += material.Emissive * material.GetColor(info.Position);
 
 		// Handle transparent materials
 		if(material.Transparency > 0.0f && bounce < MaxBounces)
@@ -225,6 +231,14 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 			aoCount /= AOSamples;
 		}
 		color *= vec3(1.0f - aoCount);
+
+		/*
+		if (FogDistance > 0.0f)
+		{
+			float normDist = info.Distance / FogDistance;
+			color = mix(color, BackgroundColor, normDist);			
+		}
+		*/
 	}
 	
 	return color;

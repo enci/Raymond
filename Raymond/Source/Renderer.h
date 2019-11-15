@@ -45,6 +45,10 @@ public:
 
 	int AOSamples = 2;
 
+	glm::vec3 BackgroundColor = glm::vec3(0.0f, 0.0f, 0.0f);
+
+	float FogDistance = -1.0f;
+
 	int	NumberOfThreads = 4;
 
 private:
