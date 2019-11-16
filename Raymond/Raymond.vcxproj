@@ -12,7 +12,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Source\AABB.cpp" />
     <ClCompile Include="Source\Box.cpp" />
+    <ClCompile Include="Source\BVH.cpp" />
     <ClCompile Include="Source\Camera.cpp" />
     <ClCompile Include="Source\Cone.cpp" />
     <ClCompile Include="Source\Light.cpp" />
@@ -23,7 +25,9 @@
     <ClCompile Include="Source\Traceable.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\AABB.h" />
     <ClInclude Include="Source\Box.h" />
+    <ClInclude Include="Source\BVH.h" />
     <ClInclude Include="Source\Camera.h" />
     <ClInclude Include="Source\Color.h" />
     <ClInclude Include="Source\Cone.h" />

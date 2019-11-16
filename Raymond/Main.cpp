@@ -20,7 +20,6 @@ using namespace std;
 using namespace glm;
 using namespace Raymond;
 
-
 bool IsValidHsv(double h, double s, double v)
 {
 	return
@@ -156,8 +155,7 @@ Scene* CreateBoxes()
 {
 	kWidth = 640;
 	kHeight = 480;
-
-	//srand(time(nullptr));
+	
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
 
@@ -219,6 +217,82 @@ Scene* CreateBoxes()
 	sphere->SetMaterial(mirror);
 		
 	scene->Objects.push_back(plane);
+	scene->Objects.push_back(sphere);
+	scene->Lights.push_back(mainLight);
+
+	scene->Camera = make_shared<Camera>(
+		vec3(0.0f, 2.5f, 1.45f),
+		vec3(0.0f, 0.0f, 0.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
+Scene* CreateBVHTest()
+{
+	kWidth = 640;
+	kHeight = 480;
+
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+
+	//auto plane = make_shared<Plane>();
+
+	const float lightRad = 0.18f;
+	auto mainLight = make_shared<DirecionalLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 1.6f;
+	mainLight->Direction = normalize(vec3(-1.0f, -1.0f, -1.0f));
+	mainLight->Radius = 0.3f;
+
+	float boxesPerAngle = 28;
+	float r = 1.2f;
+	float dr = 0.6f;
+	for (int ring = 0; ring < 12; ring++)
+	{
+		float t = 0.0f;
+		int n = int(boxesPerAngle * r);
+		float dt = pi<float>() * 2.0f / float(n);
+		for (int i = 0; i < n; i++)
+		{
+			float sx = RandInRange(0.05f, 0.20f);
+			float sy = RandInRange(0.05f, 0.20f);
+			float sz = RandInRange(0.35f, 0.60f);
+			auto box = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(sx, sx, sz));
+			//auto box = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.0f), sx);
+			float x = r * cos(t) + RandInRange(-0.1f, 0.1f);
+			float y = r * sin(t) + RandInRange(-0.1f, 0.1f);
+			vec3 pos(x, y, 0.0f);
+			//box->Center = pos;
+			transform = mat4(1.0f);
+			transform = translate(transform, pos);
+			transform = rotate(transform, RandInRange(radians(90.0f), radians(90.0f)), vec3(0.0f, 0.0f, 1.0f));
+			transform = rotate(transform, RandInRange(radians(-25.0f), radians(25.0f)), vec3(1.0f, 0.0f, 0.0f));
+			transform = rotate(transform, RandInRange(radians(-25.0f), radians(25.0f)), vec3(0.0f, 1.0f, 0.0f));
+			box->SetTransform(transform);
+			scene->Objects.push_back(box);
+
+			auto mat = make_shared<Material>();			
+			mat->Color = CreateFromHsv(
+				RandInRange(0.0f, 360.0f),
+				RandInRange(0.6f, 0.8f),
+				RandInRange(0.8f, 1.0f));
+			box->SetMaterial(mat);
+
+			t += dt;
+		}
+		r += dr;
+	}
+
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.15f), 0.15f);
+	auto mirror = make_shared<Material>();
+	mirror->Color = vec3(0.8f, 0.8f, 1.0f);
+	mirror->Reflectance = 1.0f;
+	sphere->SetMaterial(mirror);
+
+	//scene->Objects.push_back(plane);
 	scene->Objects.push_back(sphere);
 	scene->Lights.push_back(mainLight);
 
@@ -329,7 +403,87 @@ Scene* CreateCornellBox()
 	scene->Lights.push_back(mainLight);
 
 	float r = 2.8f;
-	float theta = pi<float>() * 0.5f;
+	constexpr float theta = pi<float>() * 0.5f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
+Scene* CreatePlane()
+{
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+	//auto sphere = make_shared<Plane>(vec3(0.0f, 1.0f, 0.0f), 0.0f);
+	auto plane = make_shared<Plane>();
+	plane->SetTransform(transform);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+	auto material = make_shared<Material>();
+	material->Color = vec3(1.0f, 1.0f, 1.0f);
+	material->Emissive = 1.0f;
+	material->Texture = new Checkerboard();
+	plane->SetMaterial(material);
+
+	const float lightRad = 0.18f;
+	vec3 lightPos(0.0f, 0.0f, 1.8f);
+	auto mainLight = make_shared<PointLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 20.5f;
+	mainLight->Position = lightPos;
+	mainLight->Radius = lightRad;
+
+	scene->Objects.push_back(plane);
+	//scene->Lights.push_back(mainLight);
+
+
+
+	float r = 2.8f;
+	constexpr float theta = pi<float>() * 0.5f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
+Scene* CreateWeek2()
+{
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 1.0f), 1.0f);
+	sphere->SetTransform(transform);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+	auto material = make_shared<Material>();
+	material->Color = vec3(1.0f, 0.0f, 0.0f);
+	sphere->SetMaterial(material);
+
+	auto plane = make_shared<Plane>();
+	plane->SetTransform(transform);
+	auto planeMaterial = make_shared<Material>();
+	planeMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	planeMaterial->Texture = new Checkerboard();
+	plane->SetMaterial(planeMaterial);
+
+	vec3 lightPos(2.0f, 2.0f, 3.8f);
+	auto mainLight = make_shared<PointLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 10.5f;
+	mainLight->Position = lightPos;
+	mainLight->Radius = 0.0f;
+
+	scene->Objects.push_back(sphere);
+	scene->Objects.push_back(plane);
+	scene->Lights.push_back(mainLight);
+
+	float r = 5.8f;
+	constexpr float theta = pi<float>() * 0.0f;
 	scene->Camera = make_shared<Camera>(
 		vec3(r * cos(theta), r * sin(theta), 1.0f),
 		vec3(0.0f, 0.0f, 1.0f),
@@ -414,7 +568,7 @@ Scene* CreateCone()
 	while (h > 0.0f)
 	{
 		//h = -pow(t, 2) + 2.1f;
-		h = -t / tan(theta * 0.5) + 2.1f;
+		h = -t / tan(theta * 0.5f) + 2.1f;
 		vec3 F(t * cos(t * speed), t * sin(t * speed), h);
 
 		auto light = make_shared<PointLight>();
@@ -447,10 +601,10 @@ Scene* CreateCone()
 int main(int argc, char* args[])
 {
 	Renderer renderer;
-	renderer.Scene = shared_ptr<Scene>(CreateCornellBox());
+	renderer.Scene = shared_ptr<Scene>(CreateBVHTest());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
-	renderer.Samples = 64;
-	renderer.NumberOfThreads = 6;
+	renderer.Samples = 1;
+	renderer.NumberOfThreads = 1;
 	
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
@@ -500,9 +654,11 @@ int main(int argc, char* args[])
 	return 0;
 }
 
-vec3 Checkerboard::GetColor(const vec3 & position) const
+vec3 Checkerboard::GetColor(const vec3& position) const
 {
 	vec3 white(1, 1, 1);
 	vec3 black(0, 0, 0);
-	return (int(position.x) % 2 ^ int(position.y) % 2) ? white : black;
+	int ox = sign(position.x) > 0 ? 0 : 1;
+	int oy = sign(position.y) > 0 ? 0 : 1;
+	return (int(abs(position.x) + ox) % 2 ^ int(abs(position.y) + oy) % 2) ? white : black;
 }

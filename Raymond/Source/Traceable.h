@@ -2,9 +2,11 @@
 
 #include <memory>
 #include <glm.hpp>
+#include "AABB.h"
 
 namespace Raymond
 {
+
 class Ray;
 class Traceable;
 struct Material;
@@ -30,6 +32,9 @@ public:
 	/// Trace intersection with a ray and fills the intersection
 	/// @return true if intersection was found
 	virtual bool Trace(const Ray& r, IntersectInfo& info) const = 0;
+
+	/// Get the Axis Aligned Bounding Box for this object
+	virtual AABB GetAABB() const { return {}; }
 	
 	/// Set the world transform matrix (no scaling supported at current)
 	void SetTransform(const glm::mat4& transform);

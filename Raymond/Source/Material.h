@@ -22,6 +22,12 @@ struct Material
 	float Reflectance			= 0.0f;
 	float RefractiveIndex		= 1.0f;
 	SolidTexture* Texture		= nullptr;
+	glm::vec3 GetColor(const glm::vec3& position) const;
 };
+
+inline glm::vec3 Material::GetColor(const glm::vec3& position) const
+{
+	return Texture ? Texture->GetColor(position) : Color;
+}
 
 }

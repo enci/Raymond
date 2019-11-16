@@ -4,16 +4,11 @@
 #include <glm.hpp>
 #include <vector>
 #include <thread>
-
-namespace std
-{
-	class thread;
-}
+#include "BVH.h"
 
 namespace Raymond
 {
 	
-
 class Ray;
 struct IntersectInfo;
 struct Sensor;
@@ -46,13 +41,14 @@ public:
 	int AOSamples = 2;
 
 	int	NumberOfThreads = 4;
-
+	
 private:
 	virtual glm::vec3 Trace(const Ray& ray, int bounce);
 	glm::vec3 Shade(const LightInfo& lightInfo, const IntersectInfo& info) const;
 	std::vector<std::unique_ptr<std::thread>>	_threads;
 	std::vector<int>							_progress;	
 	bool										_stop = false;
+	std::unique_ptr<BVH>						_bvh;
 };
 
 }

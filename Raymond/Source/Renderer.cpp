@@ -1,4 +1,3 @@
-
 #include "Renderer.h"
 #include "Traceable.h"
 #include "Ray.h"
@@ -9,6 +8,7 @@
 #include "Sensor.h"
 #include "Defines.h"
 #include "Utils.h"
+//#include "BVH.h"
 
 using namespace Raymond;
 using namespace glm;
@@ -17,11 +17,9 @@ vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) cons
 {
 	const Material& material = info.Object.lock()->GetMaterial();
 	
-	const vec3 color = material.Texture ?
-		material.Texture->GetColor(info.Position) :
-		material.Color;
+	const vec3 color = material.GetColor(info.Position);
 
-	vec3 output = color * material.Emissive;
+	vec3 output(0.0f, 0.0f, 0.0f);
 	vec3 d = lightInfo.Ray.Direction;	
 	output += color * lightInfo.Color * clamp(dot(d, info.Normal), 0.0f, 1.0f);
 
@@ -35,7 +33,9 @@ vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) cons
 }
 
 void Renderer::Render()
-{	
+{
+	_bvh = std::make_unique<BVH>(Scene->Objects);
+	
 	auto task = [&](int taskID)
 	{
 		const int w = Sensor->Width;
@@ -94,9 +94,11 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 {
 	vec3 color(0.0f, 0.0f, 0.0f);
 
+	
 	IntersectInfo info;
 	const auto& objects = Scene->Objects;
 
+	/*
 	float nearest = FLT_MAX;
 	for (auto t : objects)
 	{
@@ -110,14 +112,33 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 				nearest = info.Distance;
 			}
 		}
+
+		auto aabb = t->GetAABB();
+		if(aabb.Trace(ray))
+		{
+			color += vec3(0.1f, 0.1f, 0.1f);
+		}
 	}
+	*/
+	
+	// IntersectInfo bvhInfo;
+	_bvh->Trace(ray, info);
+	
 
-	const auto& lights = Scene->Lights;
-
-	if(nearest != FLT_MAX)
+	// if(nearest != FLT_MAX)
+	if(info.Distance >= 0.0f)
 	{
+		//IntersectInfo bvhInfo;
+		//_bvh->Trace(ray, bvhInfo);
+		//assert(bvhInfo.Distance == info.Distance);
+		//assert(bvhInfo.Position == info.Position);
+		//assert(bvhInfo.Normal == info.Normal);
+
+		const auto& lights = Scene->Lights;
 		const auto object = info.Object.lock();
 		auto& material = object->GetMaterial();
+
+		color += material.GetColor(info.Position) * material.Emissive;
 
 		// Handle transparent materials
 		if(material.Transparency > 0.0f && bounce < MaxBounces)
@@ -225,6 +246,12 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 			aoCount /= AOSamples;
 		}
 		color *= vec3(1.0f - aoCount);
+	}
+
+	if (Scene->FogDistance > 0.0f)
+	{
+		float normDist = info.Distance / Scene->FogDistance;
+		color = mix(color, Scene->BackgroundColor, normDist);
 	}
 	
 	return color;

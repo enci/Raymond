@@ -14,6 +14,7 @@ public:
 		: Center(center), Radius(radius) {}
 	~Sphere() override = default;
 	bool Trace(const Ray& r, IntersectInfo& info) const  override;
+	AABB GetAABB() const override;
 
 	glm::vec3 Center;
 	float Radius;

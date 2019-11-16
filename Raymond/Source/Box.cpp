@@ -84,3 +84,27 @@ bool Box::Trace(const Ray& ray, IntersectInfo& info) const
 	return false;
 
 }
+
+AABB Box::GetAABB() const
+{	
+	auto vertices =
+	{
+		vec3(-_extent.x, -_extent.y, -_extent.z),
+		vec3(-_extent.x, -_extent.y, _extent.z),
+		vec3(-_extent.x, _extent.y, -_extent.z),
+		vec3(-_extent.x, _extent.y, _extent.z),
+		vec3(_extent.x, _extent.y, -_extent.z),
+		vec3(_extent.x, -_extent.y, _extent.z),
+		vec3(_extent.x, -_extent.y, -_extent.z),
+		vec3(_extent.x, _extent.y, _extent.z)
+	};
+
+	AABB aabb;
+	for(const auto& v : vertices)
+	{
+		vec3 pos = v + _position;
+		pos = _transform * vec4(pos, 1.0f);
+		aabb.AddPoint(pos);
+	}
+	return aabb;
+}

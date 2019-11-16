@@ -35,3 +35,16 @@ bool Sphere::Trace(const Ray& r, IntersectInfo& info) const
 
 	return false;
 }
+
+AABB Sphere::GetAABB() const
+{
+	vec4 center = vec4(Center, 1.0f);
+	center = _transform * center;
+	vec3 min = center;
+	vec3 max = center;
+	const vec3 ex(Radius, Radius, Radius);
+	min -= ex;
+	max += ex;
+
+	return AABB(min, max);
+}
