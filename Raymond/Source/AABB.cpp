@@ -19,6 +19,12 @@ AABB::AABB(const glm::vec3& min, const glm::vec3& max)
 
 bool AABB::Trace(const Ray& r) const
 {
+	// In the box
+	if(		r.Origin.x >= _min.x && r.Origin.x <= _max.x
+		&&	r.Origin.y >= _min.y && r.Origin.y <= _max.y
+		&&	r.Origin.z >= _min.z && r.Origin.z <= _max.z)
+		return true;
+	
 	// Interval based test
 	const vec3 oneoverdir(1.0f / r.Direction.x, 1.0f / r.Direction.y, 1.0f / r.Direction.z);
 

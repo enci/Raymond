@@ -238,19 +238,19 @@ Scene* CreateBVHTest()
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
 
-	//auto plane = make_shared<Plane>();
+	auto plane = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(50.0f, 50.0f, 0.1f));
 
 	const float lightRad = 0.18f;
 	auto mainLight = make_shared<DirecionalLight>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
 	mainLight->Intensity = 1.6f;
 	mainLight->Direction = normalize(vec3(-1.0f, -1.0f, -1.0f));
-	mainLight->Radius = 0.3f;
+	mainLight->Radius = 0.2f;
 
 	float boxesPerAngle = 28;
-	float r = 1.2f;
-	float dr = 0.6f;
-	for (int ring = 0; ring < 12; ring++)
+	float r = 1.6f;
+	float dr = 0.62f;
+	for (int ring = 0; ring < 16; ring++)
 	{
 		float t = 0.0f;
 		int n = int(boxesPerAngle * r);
@@ -262,8 +262,9 @@ Scene* CreateBVHTest()
 			float sz = RandInRange(0.35f, 0.60f);
 			auto box = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(sx, sx, sz));
 			//auto box = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.0f), sx);
-			float x = r * cos(t) + RandInRange(-0.1f, 0.1f);
-			float y = r * sin(t) + RandInRange(-0.1f, 0.1f);
+			float R = r + RandInRange(-dr * 0.7f, dr * 0.7f);
+			float x = R * cos(t) + RandInRange(-0.1f, 0.1f);
+			float y = R * sin(t) + RandInRange(-0.1f, 0.1f);
 			vec3 pos(x, y, 0.0f);
 			//box->Center = pos;
 			transform = mat4(1.0f);
@@ -283,7 +284,8 @@ Scene* CreateBVHTest()
 
 			t += dt;
 		}
-		r += dr;
+		//r += dr * sqrt(float(ring));
+		r += dr * float(ring);
 	}
 
 	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.15f), 0.15f);
@@ -292,17 +294,20 @@ Scene* CreateBVHTest()
 	mirror->Reflectance = 1.0f;
 	sphere->SetMaterial(mirror);
 
-	//scene->Objects.push_back(plane);
+	scene->Objects.push_back(plane);
 	scene->Objects.push_back(sphere);
 	scene->Lights.push_back(mainLight);
 
 	scene->Camera = make_shared<Camera>(
-		vec3(0.0f, 2.5f, 1.45f),
+		vec3(0.0f, 2.5f, 1.5f),
 		vec3(0.0f, 0.0f, 0.0f),
 		vec3(0.0f, 0.0f, 1.0f),
 		60.0f,
 		float(kWidth) / float(kHeight));
 
+	scene->BackgroundColor = vec3(1.0f, 1.0f, 1.0f);
+	//scene->FogDistance = 75.0f;
+	
 	return scene;
 }
 
@@ -603,8 +608,8 @@ int main(int argc, char* args[])
 	Renderer renderer;
 	renderer.Scene = shared_ptr<Scene>(CreateBVHTest());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
-	renderer.Samples = 1;
-	renderer.NumberOfThreads = 1;
+	renderer.Samples = 64;
+	renderer.NumberOfThreads = 4;
 	
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{

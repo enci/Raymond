@@ -94,46 +94,12 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 {
 	vec3 color(0.0f, 0.0f, 0.0f);
 
-	
 	IntersectInfo info;
-	const auto& objects = Scene->Objects;
+	const auto& objects = Scene->Objects;	
+	_bvh->Trace(ray, info);	
 
-	/*
-	float nearest = FLT_MAX;
-	for (auto t : objects)
-	{
-		IntersectInfo tInfo;
-		tInfo.Object = t;
-		if(t->Trace(ray, tInfo))
-		{
-			if(tInfo.Distance < nearest && tInfo.Distance > 0.0001f)
-			{
-				info = tInfo;
-				nearest = info.Distance;
-			}
-		}
-
-		auto aabb = t->GetAABB();
-		if(aabb.Trace(ray))
-		{
-			color += vec3(0.1f, 0.1f, 0.1f);
-		}
-	}
-	*/
-	
-	// IntersectInfo bvhInfo;
-	_bvh->Trace(ray, info);
-	
-
-	// if(nearest != FLT_MAX)
 	if(info.Distance >= 0.0f)
 	{
-		//IntersectInfo bvhInfo;
-		//_bvh->Trace(ray, bvhInfo);
-		//assert(bvhInfo.Distance == info.Distance);
-		//assert(bvhInfo.Position == info.Position);
-		//assert(bvhInfo.Normal == info.Normal);
-
 		const auto& lights = Scene->Lights;
 		const auto object = info.Object.lock();
 		auto& material = object->GetMaterial();
@@ -198,7 +164,16 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 			const Ray& shadowRay = lightInfo.Ray;
 
 			vec3 shade(1.0f, 1.0f, 1.0f);
-			
+
+			IntersectInfo shadowInfo;
+			_bvh->Trace(shadowRay, shadowInfo);
+			if(!shadowInfo.Object.expired() && shadowInfo.Distance < lightInfo.Distance)
+			{
+				const auto& mat = shadowInfo.Object.lock()->GetMaterial();
+				shade *= mat.Transparency * mat.Color;
+			}
+
+			/*
 			for (const auto& t : objects)
 			{
 				if(info.Object.lock().get() == t.get())
@@ -214,10 +189,16 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 					shade *=  mat.Transparency * mat.Color;
 				}
 			}
+			*/
+
 			
-			color += Shade(lightInfo, info) * shade;
+			color += Shade(lightInfo, info) * shade;			
 		}
 
+
+		// color = material.GetColor(info.Position);
+
+		/*
 		static float aoLength = 0.3f;
 		float aoCount = 0.0f;
 		if (material.Emissive <= 0.0f)
@@ -244,15 +225,20 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 				}
 			}
 			aoCount /= AOSamples;
-		}
+		}	
 		color *= vec3(1.0f - aoCount);
+		*/
+		
+		if (Scene->FogDistance > 0.0f)
+		{
+			float normDist = info.Distance / Scene->FogDistance;
+			color = mix(color, Scene->BackgroundColor, normDist);
+		}
 	}
-
-	if (Scene->FogDistance > 0.0f)
+	else
 	{
-		float normDist = info.Distance / Scene->FogDistance;
-		color = mix(color, Scene->BackgroundColor, normDist);
-	}
+		color = Scene->BackgroundColor;
+	}		
 	
 	return color;
 }

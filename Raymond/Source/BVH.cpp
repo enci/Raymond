@@ -19,9 +19,18 @@ BVH::BVH(const std::vector<std::shared_ptr<Traceable>>& objects)
 	Recurse(0, _bodies.size() - 1, 0, 0);
 }
 
-bool BVH::Trace(const Ray& r, IntersectInfo& info)
+bool BVH::Trace(const Ray& r, IntersectInfo& info) const
 {
-	return Trace(r, info, 0);
+	auto f = [](std::shared_ptr<Traceable> t) -> bool { return true; };
+	return Trace(r, info, 0, f);
+}
+
+bool BVH::Trace(
+	const Ray& r,
+	IntersectInfo& info,
+	std::function<bool(std::shared_ptr<Traceable>)> filter) const
+{
+	return Trace(r, info, 0, filter);
 }
 
 void BVH::Recurse(size_t from, size_t to, size_t parent, unsigned depth)
@@ -61,7 +70,11 @@ void BVH::Recurse(size_t from, size_t to, size_t parent, unsigned depth)
 	}
 }
 
-bool BVH::Trace(const Ray& r, IntersectInfo& info, int parent)
+bool BVH::Trace(
+	const Ray& r,
+	IntersectInfo& info,
+	int parent,
+	std::function<bool(std::shared_ptr<Traceable>)> filter) const
 {
 	auto& volume = Volumes[parent];
 
@@ -70,23 +83,26 @@ bool BVH::Trace(const Ray& r, IntersectInfo& info, int parent)
 
 	if (!volume.Object.expired())
 	{
-		IntersectInfo tInfo;
-		if(volume.Object.lock()->Trace(r, tInfo))
+		if (volume.BoundingBox.Trace(r))
 		{
-			if(info.Distance < 0.0f || (tInfo.Distance < info.Distance && tInfo.Distance > 0.0001f))
-			{				
-				info = tInfo;
-				info.Object = volume.Object;
-				return true;
+			IntersectInfo tInfo;
+			if (volume.Object.lock()->Trace(r, tInfo))
+			{
+				if (info.Distance < 0.0f || (tInfo.Distance < info.Distance && tInfo.Distance > 0.1f))
+				{
+					info = tInfo;
+					info.Object = volume.Object;
+					return true;
+				}
 			}
-		}		
+		}
 	}
 	else if(volume.BoundingBox.Trace(r))
 	{
 		const auto left = 2 * parent + 1;
 		const auto right = left + 1;
-		Trace(r, info, left);
-		Trace(r, info, right);
+		Trace(r, info, left, filter);
+		Trace(r, info, right, filter);
 	}
 
 	return false;
