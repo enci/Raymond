@@ -2,6 +2,7 @@
 #include "Ray.h"
 #include "Traceable.h"
 #include <algorithm>
+#include "Utils.h"
 
 using namespace Raymond;
 using namespace glm;
@@ -10,10 +11,10 @@ using namespace std;
 BVH::BVH(const std::vector<std::shared_ptr<Traceable>>& objects)
 {
 	_bodies.clear();
-	for (const auto b : objects)
+	for (const auto& b : objects)
 			_bodies.push_back(b);
 
-	const uint capacity = uint(ceil(double(_bodies.size()) * 3.333333));
+	const uint capacity = NextPowerOfTwo(_bodies.size()) * 2u;
 	Volumes.resize(capacity);
 	Volumes.assign(capacity, BVHNode());
 	Recurse(0, _bodies.size() - 1, 0, 0);
@@ -88,7 +89,7 @@ bool BVH::Trace(
 			IntersectInfo tInfo;
 			if (volume.Object.lock()->Trace(r, tInfo))
 			{
-				if (info.Distance < 0.0f || (tInfo.Distance < info.Distance && tInfo.Distance > 0.1f))
+				if (info.Distance < 0.0f || (tInfo.Distance < info.Distance && tInfo.Distance > 0.00f))
 				{
 					info = tInfo;
 					info.Object = volume.Object;

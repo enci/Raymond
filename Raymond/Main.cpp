@@ -15,6 +15,7 @@
 #include "Source/Sensor.h"
 #include "Source/Defines.h"
 #include "Source/Cone.h"
+#include "Source/Utils.h"
 
 using namespace std;
 using namespace glm;
@@ -212,7 +213,7 @@ Scene* CreateBoxes()
 
 	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.15f), 0.15f);
 	auto mirror = make_shared<Material>();
-	mirror->Color = vec3(0.8f, 0.8f, 1.0f);
+	mirror->Color = vec3(0.0f, 0.0f, 0.0f);
 	mirror->Reflectance = 1.0f;
 	sphere->SetMaterial(mirror);
 		
@@ -230,7 +231,7 @@ Scene* CreateBoxes()
 	return scene;
 }
 
-Scene* CreateBVHTest()
+Scene* CreateWeek7()
 {
 	kWidth = 640;
 	kHeight = 480;
@@ -239,13 +240,18 @@ Scene* CreateBVHTest()
 	mat4 transform = mat4(1.0f);
 
 	auto plane = make_shared<Box>(vec3(0.0f, 0.0f, 0.0f), vec3(50.0f, 50.0f, 0.1f));
+	transform = translate(transform, vec3(0.0f, 0.0f, -0.1f));
+	plane->SetTransform(transform);
 
-	const float lightRad = 0.18f;
+	auto bottomMat = make_shared<Material>();
+	bottomMat->Color = vec3(0.4f, 0.4f, 0.4f);
+	plane->SetMaterial(bottomMat);
+
 	auto mainLight = make_shared<DirecionalLight>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
 	mainLight->Intensity = 1.6f;
 	mainLight->Direction = normalize(vec3(-1.0f, -1.0f, -1.0f));
-	mainLight->Radius = 0.2f;
+	mainLight->Radius = 0.25f;
 
 	float boxesPerAngle = 28;
 	float r = 1.6f;
@@ -290,7 +296,7 @@ Scene* CreateBVHTest()
 
 	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 0.15f), 0.15f);
 	auto mirror = make_shared<Material>();
-	mirror->Color = vec3(0.8f, 0.8f, 1.0f);
+	mirror->Color = vec3(0.0f, 0.0f, 0.0f);
 	mirror->Reflectance = 1.0f;
 	sphere->SetMaterial(mirror);
 
@@ -305,8 +311,8 @@ Scene* CreateBVHTest()
 		60.0f,
 		float(kWidth) / float(kHeight));
 
-	scene->BackgroundColor = vec3(1.0f, 1.0f, 1.0f);
-	//scene->FogDistance = 75.0f;
+	vec3 cornflowerBlue = vec3(100.0f, 149.0f, 237.0f) / 255.0f;
+	scene->BackgroundColor = cornflowerBlue;
 	
 	return scene;
 }
@@ -366,7 +372,15 @@ Scene* CreateCornellBox()
 	mainLight->Intensity = 20.5f;
 	mainLight->Position = lightPos;
 	mainLight->Radius = lightRad;
-	auto lightSphere = make_shared<Sphere>(lightPos, lightRad);
+	if (lightRad > 0.0f)
+	{
+		auto lightSphere = make_shared<Sphere>(lightPos, lightRad);
+		auto lightMaterial = make_shared<Material>();
+		lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+		lightMaterial->Emissive = 1.0f;
+		lightSphere->SetMaterial(lightMaterial);
+		scene->Objects.push_back(lightSphere);		
+	}
 	
 	auto red = make_shared<Material>();
 	red->Color = vec3(1.0f, 0.0f, 0.0f);
@@ -384,16 +398,12 @@ Scene* CreateCornellBox()
 	box->SetMaterial(blue);
 
 	auto glass = make_shared<Material>();
-	// glass->Specular = 0.2f;
-	glass->Transparency = 0.8f;
-	glass->Color = vec3(0.8f, 0.8f, 1.0f);
+	glass->Specular = 0.4f;
+	glass->Transparency = 0.85f;
+	glass->Color = vec3(0.5f, 0.5f, 0.5f);
 	glass->RefractiveIndex = 1.52f;
 	glassSphere->SetMaterial(glass);
-
-	auto lightMaterial = make_shared<Material>();
-	lightMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
-	lightMaterial->Emissive = 1.0f;
-	lightSphere->SetMaterial(lightMaterial);
+	
 
 	scene->Objects.push_back(sphere);
 	scene->Objects.push_back(glassSphere);
@@ -403,8 +413,7 @@ Scene* CreateCornellBox()
 	scene->Objects.push_back(left);
 	scene->Objects.push_back(right);
 	scene->Objects.push_back(box);
-	//scene->Objects.push_back(plane);
-	scene->Objects.push_back(lightSphere);
+	//scene->Objects.push_back(plane);	
 	scene->Lights.push_back(mainLight);
 
 	float r = 2.8f;
@@ -474,6 +483,91 @@ Scene* CreateWeek2()
 	auto planeMaterial = make_shared<Material>();
 	planeMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
 	planeMaterial->Texture = new Checkerboard();
+	plane->SetMaterial(planeMaterial);
+
+	vec3 lightPos(2.0f, 2.0f, 3.8f);
+	auto mainLight = make_shared<PointLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 10.5f;
+	mainLight->Position = lightPos;
+	mainLight->Radius = 0.0f;
+
+	scene->Objects.push_back(sphere);
+	scene->Objects.push_back(plane);
+	scene->Lights.push_back(mainLight);
+
+	float r = 5.8f;
+	constexpr float theta = pi<float>() * 0.0f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
+Scene* CreateWeek4()
+{
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 1.0f), 1.0f);
+	sphere->SetTransform(transform);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+	auto material = make_shared<Material>();
+	material->Color = vec3(1.0f, 1.0f, 1.0f);
+	material->Reflectance = 1.0f;
+	sphere->SetMaterial(material);
+
+	auto plane = make_shared<Plane>();
+	plane->SetTransform(transform);
+	auto planeMaterial = make_shared<Material>();
+	planeMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	planeMaterial->Texture = new Checkerboard();
+	plane->SetMaterial(planeMaterial);
+
+	vec3 lightPos(2.0f, 2.0f, 3.8f);
+	auto mainLight = make_shared<PointLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 10.5f;
+	mainLight->Position = lightPos;
+	mainLight->Radius = 0.0f;
+
+	scene->Objects.push_back(sphere);
+	scene->Objects.push_back(plane);
+	scene->Lights.push_back(mainLight);
+
+	float r = 5.8f;
+	constexpr float theta = pi<float>() * 0.0f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
+Scene* CreateWeek2_2()
+{
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 1.0f), 1.0f);
+	sphere->SetTransform(transform);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+	auto material = make_shared<Material>();
+	material->Color = vec3(1.0f, 0.0f, 0.0f);
+	material->Emissive = 1.0f;
+	sphere->SetMaterial(material);
+
+	auto plane = make_shared<Plane>();
+	plane->SetTransform(transform);
+	auto planeMaterial = make_shared<Material>();
+	planeMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	planeMaterial->Texture = new Checkerboard();
+	planeMaterial->Emissive = 1.0f;
 	plane->SetMaterial(planeMaterial);
 
 	vec3 lightPos(2.0f, 2.0f, 3.8f);
@@ -606,10 +700,11 @@ Scene* CreateCone()
 int main(int argc, char* args[])
 {
 	Renderer renderer;
-	renderer.Scene = shared_ptr<Scene>(CreateBVHTest());
+	renderer.Scene = shared_ptr<Scene>(CreateWeek4());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
-	renderer.Samples = 64;
+	renderer.Samples = 256;
 	renderer.NumberOfThreads = 4;
+	renderer.AOSamples = 0;
 	
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
@@ -629,7 +724,7 @@ int main(int argc, char* args[])
 
 	SDL_Surface* screenSurface = nullptr;
 	SDL_Event event;
-	bool quit = false;		
+	bool quit = false;
 
 	renderer.Render();
 

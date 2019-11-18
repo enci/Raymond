@@ -12,6 +12,7 @@
 
 using namespace Raymond;
 using namespace glm;
+using namespace std;
 
 vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) const
 {
@@ -165,13 +166,20 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 
 			vec3 shade(1.0f, 1.0f, 1.0f);
 
+			
 			IntersectInfo shadowInfo;
-			_bvh->Trace(shadowRay, shadowInfo);
+			_bvh->Trace(shadowRay, shadowInfo,[&info](std::shared_ptr<Traceable> t)
+			{
+				//if (info.Object.lock().get() == t.get())
+				//	return false;
+				return true;
+			});
 			if(!shadowInfo.Object.expired() && shadowInfo.Distance < lightInfo.Distance)
 			{
 				const auto& mat = shadowInfo.Object.lock()->GetMaterial();
 				shade *= mat.Transparency * mat.Color;
 			}
+			
 
 			/*
 			for (const auto& t : objects)
@@ -190,44 +198,52 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 				}
 			}
 			*/
-
 			
 			color += Shade(lightInfo, info) * shade;			
 		}
 
 
-		// color = material.GetColor(info.Position);
-
-		/*
-		static float aoLength = 0.3f;
-		float aoCount = 0.0f;
-		if (material.Emissive <= 0.0f)
+		if (AOSamples > 0)
 		{
-			for (int i = 0; i < AOSamples; i++)
+			static float aoLength = 0.3f;
+			float aoCount = 0.0f;
+			if (material.Emissive <= 0.0f)
 			{
-				Ray aoRay(info.Position, RandomOnUnitHemisphere(info.Normal));
-				aoRay.Origin += aoRay.Direction * 0.001f;
-
-				for (const auto& t : objects)
+				for (int i = 0; i < AOSamples; i++)
 				{
-					if (t->GetMaterial().Emissive > 0.0f)
-						continue;
+					Ray aoRay(info.Position, RandomOnUnitHemisphere(info.Normal));
+					aoRay.Origin += aoRay.Direction * 0.001f;
 
 					IntersectInfo aoInfo;
-					if (t->Trace(aoRay, aoInfo) && aoInfo.Distance < aoLength)
+					_bvh->Trace(aoRay, aoInfo);
+					if (!aoInfo.Object.expired() && aoInfo.Distance < aoLength)
 					{
-						const auto& mat = t.get()->GetMaterial();
+						const auto& mat = aoInfo.Object.lock()->GetMaterial();
 						aoCount += 1.0f - mat.Transparency;
-
-						if (aoCount >= 1.0f)
-							break;
 					}
+
+					/*
+					for (const auto& t : objects)
+					{
+						if (t->GetMaterial().Emissive > 0.0f)
+							continue;
+
+						IntersectInfo aoInfo;
+						if (t->Trace(aoRay, aoInfo) && aoInfo.Distance < aoLength)
+						{
+							const auto& mat = t.get()->GetMaterial();
+							aoCount += 1.0f - mat.Transparency;
+
+							if (aoCount >= 1.0f)
+								break;
+						}
+					}
+					*/
 				}
+				aoCount /= float(AOSamples);
 			}
-			aoCount /= AOSamples;
-		}	
-		color *= vec3(1.0f - aoCount);
-		*/
+			color *= vec3(1.0f - aoCount);
+		}
 		
 		if (Scene->FogDistance > 0.0f)
 		{

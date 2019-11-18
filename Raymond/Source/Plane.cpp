@@ -35,3 +35,11 @@ bool Plane::Trace(const Ray& r, IntersectInfo& info) const
 	
 	return true;
 }
+
+AABB Plane::GetAABB() const
+{
+	AABB aabb(
+		vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX),
+		vec3(FLT_MAX, FLT_MAX, FLT_MAX));
+	return aabb;
+}
