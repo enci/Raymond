@@ -232,6 +232,50 @@ Scene* CreateBoxes()
 	return scene;
 }
 
+Scene* CreateWeek4()
+{
+	Scene* scene = new Scene();
+	mat4 transform = mat4(1.0f);
+	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 1.0f), 1.0f);
+	sphere->SetTransform(transform);
+	vec3 zero(0.0f, 0.0f, 0.0f);
+	auto material = make_shared<Material>();
+	material->Color = vec3(0.05f, 0.05f, 0.05f);
+	material->Reflectance = 1.0f;
+	material->Specular = 0.4f;
+	material->SpecularPower = 256.0f;
+	sphere->SetMaterial(material);
+
+	auto plane = make_shared<Plane>();
+	plane->SetTransform(transform);
+	auto planeMaterial = make_shared<Material>();
+	planeMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
+	planeMaterial->Texture = new Checkerboard();
+	plane->SetMaterial(planeMaterial);
+
+	vec3 lightPos(2.0f, 2.0f, 3.8f);
+	auto mainLight = make_shared<PointLight>();
+	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
+	mainLight->Intensity = 10.5f;
+	mainLight->Position = lightPos;
+	mainLight->Radius = 0.0f;
+
+	scene->Objects.push_back(sphere);
+	scene->Objects.push_back(plane);
+	scene->Lights.push_back(mainLight);
+
+	float r = 5.8f;
+	constexpr float theta = pi<float>() * 0.0f;
+	scene->Camera = make_shared<Camera>(
+		vec3(r * cos(theta), r * sin(theta), 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		vec3(0.0f, 0.0f, 1.0f),
+		60.0f,
+		float(kWidth) / float(kHeight));
+
+	return scene;
+}
+
 Scene* CreateCornellBox()
 {
 	Scene* scene = new Scene();
@@ -280,7 +324,7 @@ Scene* CreateCornellBox()
 
 	auto glassSphere = make_shared<Sphere>(vec3(0.3f, 0.5f, 0.25f), 0.25f);
 
-	const float lightRad = 0.18f;
+	const float lightRad = 0.0f;
 	vec3 lightPos(0.0f, 0.0f, 1.8f);
 	auto mainLight = make_shared<PointLight>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
@@ -447,7 +491,7 @@ Scene* CreateCone()
 int main(int argc, char* args[])
 {
 	Renderer renderer;
-	renderer.Scene = shared_ptr<Scene>(CreateCone());
+	renderer.Scene = shared_ptr<Scene>(CreateWeek4());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
 	renderer.Samples = 1024;
 	renderer.NumberOfThreads = 1;
@@ -500,9 +544,11 @@ int main(int argc, char* args[])
 	return 0;
 }
 
-vec3 Checkerboard::GetColor(const vec3 & position) const
+vec3 Checkerboard::GetColor(const vec3& position) const
 {
 	vec3 white(1, 1, 1);
 	vec3 black(0, 0, 0);
-	return (int(position.x) % 2 ^ int(position.y) % 2) ? white : black;
+	int ox = sign(position.x) > 0 ? 0 : 1;
+	int oy = sign(position.y) > 0 ? 0 : 1;
+	return (int(abs(position.x) + ox) % 2 ^ int(abs(position.y) + oy) % 2) ? white : black;
 }

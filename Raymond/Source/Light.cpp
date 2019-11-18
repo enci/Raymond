@@ -14,10 +14,10 @@ LightInfo PointLight::GetLightInfo(const glm::vec3& position)
 	info.Ray = Ray(position, direction);
 	const float& r = info.Distance - Radius;
 
-	//const float intensity = Intensity / (r*r);
+	const float intensity = Intensity / (r*r);
 
-	const float frac = (info.Distance / Radius + 1);
-	const float intensity = Intensity / (frac * frac);
+	//const float frac = (info.Distance / Radius + 1);
+	//const float intensity = Intensity / (frac * frac);
 
 	info.Color = this->Color * intensity;
 	return info;
