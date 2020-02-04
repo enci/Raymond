@@ -8,7 +8,8 @@ using namespace Raymond;
 LightInfo PointLight::GetLightInfo(const glm::vec3& position)
 {
 	LightInfo info;
-	vec3 direction = (Position + RandomOnUnitSphere() * Radius) - position;
+	//vec3 direction = (Position + RandomOnUnitSphere() * Radius) - position;
+	vec3 direction = Position - position;
 	info.Distance = length(direction);
 	direction /= info.Distance;
 	info.Ray = Ray(position, direction);

@@ -134,8 +134,8 @@ void UpdateSurface(SDL_Surface* surface, Sensor* sensor)
 			Putpixel(surface, x, y, sensor->GetPixel(x, y).Int);
 }
 
-int kWidth = 600;
-int kHeight = 600;
+int kWidth = 256;
+int kHeight = 256;
 
 string MakeProgressBar(const float progress)
 {
@@ -154,8 +154,8 @@ string MakeProgressBar(const float progress)
 
 Scene* CreateBoxes()
 {
-	kWidth = 640;
-	kHeight = 480;
+	kWidth = 1920;
+	kHeight = 1080;
 	
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
@@ -233,8 +233,8 @@ Scene* CreateBoxes()
 
 Scene* CreateWeek7()
 {
-	kWidth = 640;
-	kHeight = 480;
+	kWidth = 1920;
+	kHeight = 1080;
 
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
@@ -319,6 +319,9 @@ Scene* CreateWeek7()
 
 Scene* CreateCornellBox()
 {
+	kWidth = 512;
+	kHeight = 512;
+	
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
 	auto sphere = make_shared<Sphere>(vec3(-0.5f, 0.2f, 0.25f), 0.25f);
@@ -365,11 +368,11 @@ Scene* CreateCornellBox()
 
 	auto glassSphere = make_shared<Sphere>(vec3(0.3f, 0.5f, 0.25f), 0.25f);
 
-	const float lightRad = 0.18f;
+	const float lightRad = 0.0f;
 	vec3 lightPos(0.0f, 0.0f, 1.8f);
 	auto mainLight = make_shared<PointLight>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
-	mainLight->Intensity = 20.5f;
+	mainLight->Intensity = 2.5f;
 	mainLight->Position = lightPos;
 	mainLight->Radius = lightRad;
 	if (lightRad > 0.0f)
@@ -389,11 +392,12 @@ Scene* CreateCornellBox()
 	auto green = make_shared<Material>();
 	green->Color = vec3(0.0f, 1.0f, 0.0f);
 	right->SetMaterial(green);
+	bottom->SetMaterial(green);
 
 	auto blue = make_shared<Material>();
-	blue->Color = vec3(0.0f, 0.0f, 1.0f);
+	blue->Color = vec3(0.0f, 0.0f, 0.0f);
 	blue->Specular = 0.2f;
-	blue->Reflectance = 0.5f;
+	blue->Reflectance = 1.0f;
 	sphere->SetMaterial(blue);
 	box->SetMaterial(blue);
 
@@ -408,13 +412,15 @@ Scene* CreateCornellBox()
 	scene->Objects.push_back(sphere);
 	scene->Objects.push_back(glassSphere);
 	scene->Objects.push_back(bottom);
-	scene->Objects.push_back(top);
-	scene->Objects.push_back(back);
-	scene->Objects.push_back(left);
-	scene->Objects.push_back(right);
+	//scene->Objects.push_back(top);
+	//scene->Objects.push_back(back);
+	//scene->Objects.push_back(left);
+	//scene->Objects.push_back(right);
 	scene->Objects.push_back(box);
 	//scene->Objects.push_back(plane);	
 	scene->Lights.push_back(mainLight);
+	scene->BackgroundColor = vec3(0.3f, 0.3f, 0.3f);
+
 
 	float r = 2.8f;
 	constexpr float theta = pi<float>() * 0.5f;
@@ -471,28 +477,32 @@ Scene* CreateWeek2()
 {
 	Scene* scene = new Scene();
 	mat4 transform = mat4(1.0f);
+
+	/*
 	auto sphere = make_shared<Sphere>(vec3(0.0f, 0.0f, 1.0f), 1.0f);
 	sphere->SetTransform(transform);
 	vec3 zero(0.0f, 0.0f, 0.0f);
 	auto material = make_shared<Material>();
 	material->Color = vec3(1.0f, 0.0f, 0.0f);
 	sphere->SetMaterial(material);
+	*/
 
 	auto plane = make_shared<Plane>();
 	plane->SetTransform(transform);
 	auto planeMaterial = make_shared<Material>();
 	planeMaterial->Color = vec3(1.0f, 1.0f, 1.0f);
-	planeMaterial->Texture = new Checkerboard();
+	//planeMaterial->Texture = new Checkerboard();
 	plane->SetMaterial(planeMaterial);
 
-	vec3 lightPos(2.0f, 2.0f, 3.8f);
+	
+	vec3 lightPos(1.0f, 1.0f, 1.2f);
 	auto mainLight = make_shared<PointLight>();
 	mainLight->Color = vec3(1.0f, 1.0f, 1.0f);
-	mainLight->Intensity = 10.5f;
+	mainLight->Intensity = 1.5f;
 	mainLight->Position = lightPos;
-	mainLight->Radius = 0.0f;
+	mainLight->Radius = 1.0f;
 
-	scene->Objects.push_back(sphere);
+	//scene->Objects.push_back(sphere);
 	scene->Objects.push_back(plane);
 	scene->Lights.push_back(mainLight);
 
@@ -700,11 +710,10 @@ Scene* CreateCone()
 int main(int argc, char* args[])
 {
 	Renderer renderer;
-	renderer.Scene = shared_ptr<Scene>(CreateWeek4());
+	renderer.Scene = shared_ptr<Scene>(CreateCornellBox());
 	renderer.Sensor = make_shared<Sensor>(kWidth, kHeight);
-	renderer.Samples = 256;
+	renderer.Samples = 1;
 	renderer.NumberOfThreads = 4;
-	renderer.AOSamples = 0;
 	
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 	{
@@ -724,9 +733,9 @@ int main(int argc, char* args[])
 
 	SDL_Surface* screenSurface = nullptr;
 	SDL_Event event;
-	bool quit = false;
+	bool quit = false;	
 
-	renderer.Render();
+	float t = 0.0f;
 
 	screenSurface = SDL_GetWindowSurface(win);
 	while (!quit)
@@ -738,17 +747,23 @@ int main(int argc, char* args[])
 				quit = true;
 				renderer.Stop();
 			}
-		}		
+		}
+
+		t += 0.016f;	
+		vec3 origin(cos(t) * 4.0f, sin(t) * 4.0f, 1.0f);
+		renderer.Scene->Camera->SetOrigin(origin);
+		renderer.Scene->Camera->Update();
+		renderer.Render();
 		
 		SDL_LockSurface(screenSurface);	
 		UpdateSurface(screenSurface, renderer.Sensor.get());
 		SDL_UnlockSurface(screenSurface);
 		SDL_UpdateWindowSurface(win);
 
-		const auto progress = renderer.GetProgress();
-		string name = "Raymond - " + MakeProgressBar(progress);
-		SDL_Delay(1000 / 30);
-		SDL_SetWindowTitle(win, name.c_str());
+		//const auto progress = renderer.GetProgress();
+		//string name = "Raymond - " + MakeProgressBar(progress);
+		//SDL_Delay(1000 / 60);
+		//SDL_SetWindowTitle(win, name.c_str());
 	}
 			
 	return 0;

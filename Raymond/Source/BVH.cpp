@@ -22,16 +22,7 @@ BVH::BVH(const std::vector<std::shared_ptr<Traceable>>& objects)
 
 bool BVH::Trace(const Ray& r, IntersectInfo& info) const
 {
-	auto f = [](std::shared_ptr<Traceable> t) -> bool { return true; };
-	return Trace(r, info, 0, f);
-}
-
-bool BVH::Trace(
-	const Ray& r,
-	IntersectInfo& info,
-	std::function<bool(std::shared_ptr<Traceable>)> filter) const
-{
-	return Trace(r, info, 0, filter);
+	return Trace(r, info, 0);
 }
 
 void BVH::Recurse(size_t from, size_t to, size_t parent, unsigned depth)
@@ -64,7 +55,6 @@ void BVH::Recurse(size_t from, size_t to, size_t parent, unsigned depth)
 		auto& lv = Volumes[left];
 		auto& rv = Volumes[right];
 
-		//root.Object = nullptr;
 		root.BoundingBox = AABB();
 		root.BoundingBox.Add(lv.BoundingBox);
 		root.BoundingBox.Add(rv.BoundingBox);
@@ -74,8 +64,7 @@ void BVH::Recurse(size_t from, size_t to, size_t parent, unsigned depth)
 bool BVH::Trace(
 	const Ray& r,
 	IntersectInfo& info,
-	int parent,
-	std::function<bool(std::shared_ptr<Traceable>)> filter) const
+	int parent) const
 {
 	auto& volume = Volumes[parent];
 
@@ -102,8 +91,8 @@ bool BVH::Trace(
 	{
 		const auto left = 2 * parent + 1;
 		const auto right = left + 1;
-		Trace(r, info, left, filter);
-		Trace(r, info, right, filter);
+		Trace(r, info, left);
+		Trace(r, info, right);
 	}
 
 	return false;

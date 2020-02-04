@@ -17,10 +17,6 @@ class BVH
 public:
 	BVH(const std::vector<std::shared_ptr<Traceable>>& objects);
 	bool Trace(const Ray& r, IntersectInfo& info) const;
-	bool Trace(
-		const Ray& r,
-		IntersectInfo& info,
-		std::function<bool(std::shared_ptr<Traceable>)> filter) const;
 private:
 	void Recurse(size_t from, size_t to, size_t parent, unsigned depth);
 	struct BVHNode
@@ -31,8 +27,7 @@ private:
 	bool Trace(
 		const Ray& r,
 		IntersectInfo& info, 
-		int parent,
-		std::function<bool(std::shared_ptr<Traceable>)> filter) const;
+		int parent) const;
 	std::vector<BVHNode> Volumes;
 	std::vector<std::weak_ptr<Traceable>> _bodies;
 };

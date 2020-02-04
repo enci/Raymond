@@ -9,10 +9,13 @@
 #include "Defines.h"
 #include "Utils.h"
 //#include "BVH.h"
+#include <omp.h>
 
 using namespace Raymond;
 using namespace glm;
 using namespace std;
+
+const float kGeometricEpsilon = 0.0001f;
 
 vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) const
 {
@@ -36,7 +39,32 @@ vec3 Renderer::Shade(const LightInfo& lightInfo, const IntersectInfo& info) cons
 void Renderer::Render()
 {
 	_bvh = std::make_unique<BVH>(Scene->Objects);
-	
+	const int w = Sensor->Width;
+	const int h = Sensor->Height;
+	this->Sensor->Clear();
+
+	for (int s = 0; s < Samples; s++)
+	{
+		//#pragma omp parallel simd //for reduction(+:sum) private(this->Se)
+		#pragma omp parallel for schedule(dynamic)
+		for (int y = 0; y < h; ++y)
+		{
+			for (int x = 0; x < w; ++x)
+			{
+				float u = float(x + (Samples > 1 ? RandInRange(-0.5f, 0.5f) : 0.0f)) / float(w);
+				float v = float(y + (Samples > 1 ? RandInRange(-0.5f, 0.5f) : 0.0f)) / float(h);
+
+				Ray ray = Scene->Camera->GetRay(u, v);
+				auto color = Trace(ray, 0);
+				this->Sensor->AddSample(x, y, color);
+
+				if (_stop)
+					return;
+			}
+		}
+	}
+
+	/*
 	auto task = [&](int taskID)
 	{
 		const int w = Sensor->Width;
@@ -44,6 +72,7 @@ void Renderer::Render()
 
 		for (int s = 0; s < Samples; s++)
 		{
+			this->Sensor->Clear();
 			for (int y = 0; y < h; ++y)
 			{
 				if(y % NumberOfThreads != taskID)
@@ -71,6 +100,12 @@ void Renderer::Render()
 		_threads.push_back(std::make_unique<std::thread>(task, id));
 		_progress.push_back(0);
 	}
+
+	for (const auto& w : _threads)
+	{
+		w->join();
+	}
+	*/
 }
 
 float Renderer::GetProgress()
@@ -96,16 +131,45 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 	vec3 color(0.0f, 0.0f, 0.0f);
 
 	IntersectInfo info;
-	const auto& objects = Scene->Objects;	
-	_bvh->Trace(ray, info);	
+	// info.Distance = FLT_MAX;
+	float distance = FLT_MAX;
+	const auto& objects = Scene->Objects;
 
-	if(info.Distance >= 0.0f)
+	_bvh->Trace(ray, info);
+
+	// use the fancy shadow acne offset (epsilon) with using N.L^3 (and 1-N.L^3) in weight an offset along
+	// the normal and along the ray, so that at grazing angles you offset the origin
+
+	/*
+	for (const auto& obj : objects)
+	{
+		IntersectInfo tInfo;
+		if (obj->Trace(ray, tInfo))
+		{
+			if(tInfo.Distance < distance)
+			{
+				distance = tInfo.Distance;
+				info = tInfo;
+				info.Object = obj;
+			}
+		}
+	}
+	*/
+
+	if(info.Distance >= kGeometricEpsilon)
 	{
 		const auto& lights = Scene->Lights;
 		const auto object = info.Object.lock();
 		auto& material = object->GetMaterial();
 
 		color += material.GetColor(info.Position) * material.Emissive;
+
+		// color += material.GetColor(info.Position);
+		// return color;
+
+		// float dist = info.Distance / 10.0f;
+		// return vec3(dist, dist, dist);
+
 
 		// Handle transparent materials
 		if(material.Transparency > 0.0f && bounce < MaxBounces)
@@ -137,7 +201,7 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 				else; // Total internal reflection. Not yet implemented				
 			}
 
-			Ray reflectedRay(origin, reflected);
+			Ray reflectedRay(origin + reflected * kGeometricEpsilon, reflected);
 			reflectedRay.Origin += reflectedRay.Direction * 0.001f;
 			vec3 reflectedColor = Trace(reflectedRay, bounce + 1);
 
@@ -154,7 +218,7 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 		{
 			const auto reflected = reflect(ray.Direction, info.Normal);
 			const auto origin = info.Position;
-			const Ray reflectedRay(origin, reflected);
+			const Ray reflectedRay(origin + reflected * kGeometricEpsilon, reflected);
 			color += Trace(reflectedRay, bounce + 1) * material.Reflectance;
 		}		
 
@@ -166,20 +230,15 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 
 			vec3 shade(1.0f, 1.0f, 1.0f);
 
-			
 			IntersectInfo shadowInfo;
-			_bvh->Trace(shadowRay, shadowInfo,[&info](std::shared_ptr<Traceable> t)
-			{
-				//if (info.Object.lock().get() == t.get())
-				//	return false;
-				return true;
-			});
-			if(!shadowInfo.Object.expired() && shadowInfo.Distance < lightInfo.Distance)
+			_bvh->Trace(shadowRay, shadowInfo);			
+			if(!shadowInfo.Object.expired() &&
+				shadowInfo.Distance > kGeometricEpsilon &&
+				shadowInfo.Distance < lightInfo.Distance)
 			{
 				const auto& mat = shadowInfo.Object.lock()->GetMaterial();
 				shade *= mat.Transparency * mat.Color;
 			}
-			
 
 			/*
 			for (const auto& t : objects)
@@ -202,54 +261,13 @@ vec3 Renderer::Trace(const Ray& ray, int bounce)
 			color += Shade(lightInfo, info) * shade;			
 		}
 
-
-		if (AOSamples > 0)
-		{
-			static float aoLength = 0.3f;
-			float aoCount = 0.0f;
-			if (material.Emissive <= 0.0f)
-			{
-				for (int i = 0; i < AOSamples; i++)
-				{
-					Ray aoRay(info.Position, RandomOnUnitHemisphere(info.Normal));
-					aoRay.Origin += aoRay.Direction * 0.001f;
-
-					IntersectInfo aoInfo;
-					_bvh->Trace(aoRay, aoInfo);
-					if (!aoInfo.Object.expired() && aoInfo.Distance < aoLength)
-					{
-						const auto& mat = aoInfo.Object.lock()->GetMaterial();
-						aoCount += 1.0f - mat.Transparency;
-					}
-
-					/*
-					for (const auto& t : objects)
-					{
-						if (t->GetMaterial().Emissive > 0.0f)
-							continue;
-
-						IntersectInfo aoInfo;
-						if (t->Trace(aoRay, aoInfo) && aoInfo.Distance < aoLength)
-						{
-							const auto& mat = t.get()->GetMaterial();
-							aoCount += 1.0f - mat.Transparency;
-
-							if (aoCount >= 1.0f)
-								break;
-						}
-					}
-					*/
-				}
-				aoCount /= float(AOSamples);
-			}
-			color *= vec3(1.0f - aoCount);
-		}
-		
+		/*
 		if (Scene->FogDistance > 0.0f)
 		{
 			float normDist = info.Distance / Scene->FogDistance;
 			color = mix(color, Scene->BackgroundColor, normDist);
 		}
+		*/
 	}
 	else
 	{
