@@ -12,4 +12,4 @@ jobs:
 
     - name: MSBuild
       working-directory: Raymond
-      run: msbuild Raymond.vcxproj
+      run: msbuild Raymond.vcxproj /p:Configuration=Release /p:Platform=x64
